@@ -1,0 +1,13 @@
+.build/
+.swiftpm/
+DerivedData/
+data/bench/
+rust/tvtv-vortex/target/
+rust/tvtv-vortex/include/
+*.xcuserstate
+xcuserdata/
+build/xcode/
+dist/
+
+# Local SDD / agent scratch
+.superpowers/

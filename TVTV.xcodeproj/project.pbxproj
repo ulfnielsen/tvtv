@@ -1,0 +1,710 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		16E13147A0D46138ADF502F4 /* TVTVCore in Frameworks */ = {isa = PBXBuildFile; productRef = C930725444322435F903B4F3 /* TVTVCore */; };
+		22CD01DDE215C1E2A0344E7C /* TVTVQuickLook.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 60CD35E12DD6084975FDEB51 /* TVTVQuickLook.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		2B467C3A136E1826B5E165DD /* SQLEditorAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED6475F9540DF887F1370EE /* SQLEditorAppTests.swift */; };
+		408F90AEAAD7AA388CB39ACF /* CompletionPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B722B876103A23551F6DE3 /* CompletionPopup.swift */; };
+		668E7B7F9E1A00144844B5D6 /* TVTVCore in Frameworks */ = {isa = PBXBuildFile; productRef = EE17960882D88C624D4238D4 /* TVTVCore */; };
+		6F63D96F94B88F72F8B64397 /* DataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D99120620E8A7CA9152D006 /* DataSourceTests.swift */; };
+		8734CE37170BB991DB8141C0 /* TVTVCore in Frameworks */ = {isa = PBXBuildFile; productRef = EA769547F0EEDC7DD46A07BA /* TVTVCore */; };
+		8A4A2023D9B713E83412AF22 /* TVTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 625A6D2A8C43BABF9B54B854 /* TVTVApp.swift */; };
+		8F3CAB1885034EA31E6EAE37 /* DuckDB in Frameworks */ = {isa = PBXBuildFile; productRef = 5DD87FB749BB971835DC1859 /* DuckDB */; };
+		C59CE31DC60BF005D7F8DBAD /* DuckDB in Frameworks */ = {isa = PBXBuildFile; productRef = 3BCF8F75DE865C80F2E3E0AF /* DuckDB */; };
+		D615A8CCF89B321BF23C8247 /* SQLEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C36B30F5DAE81115067D0AB /* SQLEditor.swift */; };
+		D7137B578F30276923195FB0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5F2B43F89AE1B72CC55EE279 /* Assets.xcassets */; };
+		DCA6E2C880A87D9291501F19 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E98928B8D3960389DEB305 /* ContentView.swift */; };
+		E4A8BEF8428C64BB593EB0D8 /* PreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD15D38A5F18D0F97F8E3124 /* PreviewViewController.swift */; };
+		EE4372DCC992B52563ABEBEA /* DataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A4EA3212A7AFE213063D953 /* DataSource.swift */; };
+		F5ADFF88A2BEB7746E27E575 /* DuckDB in Frameworks */ = {isa = PBXBuildFile; productRef = 5CB83969E9C356A84BF6825C /* DuckDB */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AB31A3AB6808BCF26CD640DE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F791DC46E191FC6C214929B1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CBC1A90091D5EE48553A53FE;
+			remoteInfo = TVTVQuickLook;
+		};
+		B6D984F4142026280A5A70B2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F791DC46E191FC6C214929B1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5E5AFA40B55A41FB5F260553;
+			remoteInfo = TVTVApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2B4E275AF8557E15D3FB3319 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				22CD01DDE215C1E2A0344E7C /* TVTVQuickLook.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		15E98928B8D3960389DEB305 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		3FC703E03DEE2923108D4E01 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4D99120620E8A7CA9152D006 /* DataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourceTests.swift; sourceTree = "<group>"; };
+		5F2B43F89AE1B72CC55EE279 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		60CD35E12DD6084975FDEB51 /* TVTVQuickLook.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TVTVQuickLook.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		625A6D2A8C43BABF9B54B854 /* TVTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVTVApp.swift; sourceTree = "<group>"; };
+		64B722B876103A23551F6DE3 /* CompletionPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionPopup.swift; sourceTree = "<group>"; };
+		6C36B30F5DAE81115067D0AB /* SQLEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLEditor.swift; sourceTree = "<group>"; };
+		6D83DF9FB51E8A80A5A5CFED /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		76E6AE2FC910897864864B80 /* TVTVCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TVTVCore; path = Packages/TVTVCore; sourceTree = SOURCE_ROOT; };
+		8A4EA3212A7AFE213063D953 /* DataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSource.swift; sourceTree = "<group>"; };
+		91156999B7BC35000B7B8690 /* TVTVAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TVTVAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABD3BFC880081D4504768618 /* TVTVApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TVTVApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FD15D38A5F18D0F97F8E3124 /* PreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewController.swift; sourceTree = "<group>"; };
+		FED6475F9540DF887F1370EE /* SQLEditorAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLEditorAppTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0CA9E9ECF946479D3871D58F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				668E7B7F9E1A00144844B5D6 /* TVTVCore in Frameworks */,
+				F5ADFF88A2BEB7746E27E575 /* DuckDB in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		25EC84F93F03A6A0F0D6E9F1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16E13147A0D46138ADF502F4 /* TVTVCore in Frameworks */,
+				8F3CAB1885034EA31E6EAE37 /* DuckDB in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D0B5B0E5CD8D40F25E787F85 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8734CE37170BB991DB8141C0 /* TVTVCore in Frameworks */,
+				C59CE31DC60BF005D7F8DBAD /* DuckDB in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0A2470AC71F10065A74F5377 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				76E6AE2FC910897864864B80 /* TVTVCore */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		1AEE9265139ECCB455CE0D3F = {
+			isa = PBXGroup;
+			children = (
+				0A2470AC71F10065A74F5377 /* Packages */,
+				62AC00E8EE891C79AFE617F2 /* TVTVApp */,
+				4FEEC5304173073825731B1F /* TVTVAppTests */,
+				F7C6D2E1BA67D196EC865B7C /* TVTVQuickLook */,
+				BC5849E68A2D27CD071D8609 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4FEEC5304173073825731B1F /* TVTVAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				4D99120620E8A7CA9152D006 /* DataSourceTests.swift */,
+				FED6475F9540DF887F1370EE /* SQLEditorAppTests.swift */,
+			);
+			path = TVTVAppTests;
+			sourceTree = "<group>";
+		};
+		62AC00E8EE891C79AFE617F2 /* TVTVApp */ = {
+			isa = PBXGroup;
+			children = (
+				5F2B43F89AE1B72CC55EE279 /* Assets.xcassets */,
+				64B722B876103A23551F6DE3 /* CompletionPopup.swift */,
+				15E98928B8D3960389DEB305 /* ContentView.swift */,
+				8A4EA3212A7AFE213063D953 /* DataSource.swift */,
+				3FC703E03DEE2923108D4E01 /* Info.plist */,
+				6C36B30F5DAE81115067D0AB /* SQLEditor.swift */,
+				625A6D2A8C43BABF9B54B854 /* TVTVApp.swift */,
+			);
+			path = TVTVApp;
+			sourceTree = "<group>";
+		};
+		BC5849E68A2D27CD071D8609 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ABD3BFC880081D4504768618 /* TVTVApp.app */,
+				91156999B7BC35000B7B8690 /* TVTVAppTests.xctest */,
+				60CD35E12DD6084975FDEB51 /* TVTVQuickLook.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F7C6D2E1BA67D196EC865B7C /* TVTVQuickLook */ = {
+			isa = PBXGroup;
+			children = (
+				6D83DF9FB51E8A80A5A5CFED /* Info.plist */,
+				FD15D38A5F18D0F97F8E3124 /* PreviewViewController.swift */,
+			);
+			path = TVTVQuickLook;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4E551C77E75F2B59B0CED5DC /* TVTVAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B949516835EB08800F43759F /* Build configuration list for PBXNativeTarget "TVTVAppTests" */;
+			buildPhases = (
+				45DAEBFE0394055FAFFC980A /* Sources */,
+				0CA9E9ECF946479D3871D58F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CF4D1460B76B6F06D031D690 /* PBXTargetDependency */,
+			);
+			name = TVTVAppTests;
+			packageProductDependencies = (
+				EE17960882D88C624D4238D4 /* TVTVCore */,
+				5CB83969E9C356A84BF6825C /* DuckDB */,
+			);
+			productName = TVTVAppTests;
+			productReference = 91156999B7BC35000B7B8690 /* TVTVAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5E5AFA40B55A41FB5F260553 /* TVTVApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E0629F132B06513EFBAABA75 /* Build configuration list for PBXNativeTarget "TVTVApp" */;
+			buildPhases = (
+				86F3203E22404D1FD601F124 /* Build tvtv-vortex (Rust) */,
+				DCB84C464915C038060492F7 /* Sources */,
+				B55F8AC50F61965D971993BF /* Resources */,
+				D0B5B0E5CD8D40F25E787F85 /* Frameworks */,
+				2B4E275AF8557E15D3FB3319 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3EB357458E2CC9E3612D2B13 /* PBXTargetDependency */,
+			);
+			name = TVTVApp;
+			packageProductDependencies = (
+				EA769547F0EEDC7DD46A07BA /* TVTVCore */,
+				3BCF8F75DE865C80F2E3E0AF /* DuckDB */,
+			);
+			productName = TVTVApp;
+			productReference = ABD3BFC880081D4504768618 /* TVTVApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CBC1A90091D5EE48553A53FE /* TVTVQuickLook */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 43DB6B7671BB6F5DAA20309F /* Build configuration list for PBXNativeTarget "TVTVQuickLook" */;
+			buildPhases = (
+				8388367D1D7D3F4DB07C7FAA /* Build tvtv-vortex (Rust) */,
+				A057D68D4F6A14663B4E51E7 /* Sources */,
+				25EC84F93F03A6A0F0D6E9F1 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TVTVQuickLook;
+			packageProductDependencies = (
+				C930725444322435F903B4F3 /* TVTVCore */,
+				5DD87FB749BB971835DC1859 /* DuckDB */,
+			);
+			productName = TVTVQuickLook;
+			productReference = 60CD35E12DD6084975FDEB51 /* TVTVQuickLook.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F791DC46E191FC6C214929B1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 5E6B9D79F5E3F82404421A01 /* Build configuration list for PBXProject "TVTV" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1AEE9265139ECCB455CE0D3F;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AFE460525197CCE248FEE1F6 /* XCRemoteSwiftPackageReference "duckdb-swift" */,
+				68A1652C1AC679097BAC01BB /* XCLocalSwiftPackageReference "Packages/TVTVCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BC5849E68A2D27CD071D8609 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5E5AFA40B55A41FB5F260553 /* TVTVApp */,
+				4E551C77E75F2B59B0CED5DC /* TVTVAppTests */,
+				CBC1A90091D5EE48553A53FE /* TVTVQuickLook */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B55F8AC50F61965D971993BF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D7137B578F30276923195FB0 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		8388367D1D7D3F4DB07C7FAA /* Build tvtv-vortex (Rust) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build tvtv-vortex (Rust)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/scripts/build-rust.sh\"\n";
+		};
+		86F3203E22404D1FD601F124 /* Build tvtv-vortex (Rust) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build tvtv-vortex (Rust)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/scripts/build-rust.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		45DAEBFE0394055FAFFC980A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6F63D96F94B88F72F8B64397 /* DataSourceTests.swift in Sources */,
+				2B467C3A136E1826B5E165DD /* SQLEditorAppTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A057D68D4F6A14663B4E51E7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E4A8BEF8428C64BB593EB0D8 /* PreviewViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DCB84C464915C038060492F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				408F90AEAAD7AA388CB39ACF /* CompletionPopup.swift in Sources */,
+				DCA6E2C880A87D9291501F19 /* ContentView.swift in Sources */,
+				EE4372DCC992B52563ABEBEA /* DataSource.swift in Sources */,
+				D615A8CCF89B321BF23C8247 /* SQLEditor.swift in Sources */,
+				8A4A2023D9B713E83412AF22 /* TVTVApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3EB357458E2CC9E3612D2B13 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CBC1A90091D5EE48553A53FE /* TVTVQuickLook */;
+			targetProxy = AB31A3AB6808BCF26CD640DE /* PBXContainerItemProxy */;
+		};
+		CF4D1460B76B6F06D031D690 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5E5AFA40B55A41FB5F260553 /* TVTVApp */;
+			targetProxy = B6D984F4142026280A5A70B2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0BAE46BB577CFBF72758625B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = TVTVQuickLook/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "$(inherited) -Xlinker -force_load -Xlinker $(SRCROOT)/rust/tvtv-vortex/target/release/libtvtv_vortex.a -Xlinker -export_dynamic";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tvtv.app.quicklook;
+				PRODUCT_NAME = TVTVQuickLook;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		194234550D61E3563A488C63 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tvtv.app.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TVTV.app/Contents/MacOS/TVTV";
+			};
+			name = Release;
+		};
+		20E9CA957E4097CF34DD130E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.2.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				VALID_ARCHS = arm64;
+			};
+			name = Debug;
+		};
+		2D882539892747C01F8E7371 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = TVTVQuickLook/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "$(inherited) -Xlinker -force_load -Xlinker $(SRCROOT)/rust/tvtv-vortex/target/release/libtvtv_vortex.a -Xlinker -export_dynamic";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tvtv.app.quicklook;
+				PRODUCT_NAME = TVTVQuickLook;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		555E078EB1888D082AD8F402 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTING_SEARCH_PATHS = YES;
+				INFOPLIST_FILE = TVTVApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "$(inherited) -Xlinker -force_load -Xlinker $(SRCROOT)/rust/tvtv-vortex/target/release/libtvtv_vortex.a -Xlinker -export_dynamic";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tvtv.app;
+				PRODUCT_NAME = TVTV;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		76CE47AF18B3F9BDD6174AEB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.2.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				VALID_ARCHS = arm64;
+			};
+			name = Release;
+		};
+		78DDDED58A9B4ADC4D761CED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTING_SEARCH_PATHS = YES;
+				INFOPLIST_FILE = TVTVApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				OTHER_LDFLAGS = "$(inherited) -Xlinker -force_load -Xlinker $(SRCROOT)/rust/tvtv-vortex/target/release/libtvtv_vortex.a -Xlinker -export_dynamic";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tvtv.app;
+				PRODUCT_NAME = TVTV;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		BA940B433CE707FD50B88BF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tvtv.app.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TVTV.app/Contents/MacOS/TVTV";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		43DB6B7671BB6F5DAA20309F /* Build configuration list for PBXNativeTarget "TVTVQuickLook" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D882539892747C01F8E7371 /* Debug */,
+				0BAE46BB577CFBF72758625B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5E6B9D79F5E3F82404421A01 /* Build configuration list for PBXProject "TVTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20E9CA957E4097CF34DD130E /* Debug */,
+				76CE47AF18B3F9BDD6174AEB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B949516835EB08800F43759F /* Build configuration list for PBXNativeTarget "TVTVAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BA940B433CE707FD50B88BF8 /* Debug */,
+				194234550D61E3563A488C63 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E0629F132B06513EFBAABA75 /* Build configuration list for PBXNativeTarget "TVTVApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				78DDDED58A9B4ADC4D761CED /* Debug */,
+				555E078EB1888D082AD8F402 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		68A1652C1AC679097BAC01BB /* XCLocalSwiftPackageReference "Packages/TVTVCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/TVTVCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AFE460525197CCE248FEE1F6 /* XCRemoteSwiftPackageReference "duckdb-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/duckdb/duckdb-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.1.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3BCF8F75DE865C80F2E3E0AF /* DuckDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFE460525197CCE248FEE1F6 /* XCRemoteSwiftPackageReference "duckdb-swift" */;
+			productName = DuckDB;
+		};
+		5CB83969E9C356A84BF6825C /* DuckDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFE460525197CCE248FEE1F6 /* XCRemoteSwiftPackageReference "duckdb-swift" */;
+			productName = DuckDB;
+		};
+		5DD87FB749BB971835DC1859 /* DuckDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFE460525197CCE248FEE1F6 /* XCRemoteSwiftPackageReference "duckdb-swift" */;
+			productName = DuckDB;
+		};
+		C930725444322435F903B4F3 /* TVTVCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TVTVCore;
+		};
+		EA769547F0EEDC7DD46A07BA /* TVTVCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TVTVCore;
+		};
+		EE17960882D88C624D4238D4 /* TVTVCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TVTVCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = F791DC46E191FC6C214929B1 /* Project object */;
+}

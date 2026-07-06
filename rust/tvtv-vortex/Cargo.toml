@@ -1,0 +1,27 @@
+[package]
+name = "tvtv-vortex"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "C FFI staticlib exposing Vortex-format read/convert support to TVTVCore (DuckDB cannot read Vortex natively). Real Vortex reader: preview + Vortex->Parquet conversion."
+
+[lib]
+name = "tvtv_vortex"
+# Rust identifiers can't contain '-'; nm/link symbol is still `libtvtv_vortex.a`
+# because `name` above controls the artifact stem, matching what
+# scripts/build-rust.sh and the Xcode build phase expect.
+# "rlib" is added alongside "staticlib" so in-crate `examples/` (e.g.
+# parquet_to_vtx, which generates .vtx fixtures) can link the library as a
+# normal Rust dependency. The staticlib artifact/symbols for Swift/Xcode are
+# unaffected.
+crate-type = ["staticlib", "rlib"]
+
+# Pinned exact versions that resolve offline against the cargo cache.
+# `vortex` "tokio" feature makes vortex-io pick up the ambient Tokio runtime
+# (Handle::find checks TokioHandle::try_current) and lets tokio::fs::File
+# implement VortexWrite for the round-trip test's writer.
+[dependencies]
+vortex = { version = "=0.64.0", features = ["tokio"] }
+arrow = "=57.3.0"
+parquet = "=57.3.0"
+tokio = { version = "=1.52.3", features = ["rt-multi-thread", "fs"] }

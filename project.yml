@@ -1,0 +1,119 @@
+name: TVTV
+options:
+  bundleIdPrefix: com.tvtv
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    ARCHS: arm64
+    VALID_ARCHS: arm64
+    ONLY_ACTIVE_ARCH: YES
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    GENERATE_INFOPLIST_FILE: NO
+
+packages:
+  TVTVCore:
+    path: Packages/TVTVCore
+  DuckDB:
+    url: https://github.com/duckdb/duckdb-swift.git
+    exactVersion: 1.1.3
+
+targets:
+  TVTVApp:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: TVTVApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tvtv.app
+        PRODUCT_NAME: TVTV
+        INFOPLIST_FILE: TVTVApp/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_HARDENED_RUNTIME: YES
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_TESTING_SEARCH_PATHS: YES
+        OTHER_LDFLAGS: $(inherited) -Xlinker -force_load -Xlinker $(SRCROOT)/rust/tvtv-vortex/target/release/libtvtv_vortex.a -Xlinker -export_dynamic
+    prebuildScripts:
+      - name: "Build tvtv-vortex (Rust)"
+        script: |
+          "${SRCROOT}/scripts/build-rust.sh"
+        basedOnDependencyAnalysis: false
+    dependencies:
+      - package: TVTVCore
+        product: TVTVCore
+      - package: DuckDB
+        product: DuckDB
+      - target: TVTVQuickLook
+        embed: true
+        codeSign: true
+
+  TVTVAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: TVTVAppTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tvtv.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TVTV.app/Contents/MacOS/TVTV"
+    dependencies:
+      - target: TVTVApp
+      - package: TVTVCore
+        product: TVTVCore
+      - package: DuckDB
+        product: DuckDB
+
+  TVTVQuickLook:
+    type: app-extension
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: TVTVQuickLook
+    prebuildScripts:
+      - name: "Build tvtv-vortex (Rust)"
+        script: |
+          "${SRCROOT}/scripts/build-rust.sh"
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tvtv.app.quicklook
+        PRODUCT_NAME: TVTVQuickLook
+        INFOPLIST_FILE: TVTVQuickLook/Info.plist
+        SKIP_INSTALL: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        OTHER_LDFLAGS: $(inherited) -Xlinker -force_load -Xlinker $(SRCROOT)/rust/tvtv-vortex/target/release/libtvtv_vortex.a -Xlinker -export_dynamic
+    dependencies:
+      - package: TVTVCore
+        product: TVTVCore
+      - package: DuckDB
+        product: DuckDB
+
+schemes:
+  TVTVApp:
+    build:
+      targets:
+        TVTVApp: all
+        TVTVAppTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - TVTVAppTests
+    archive:
+      config: Release
