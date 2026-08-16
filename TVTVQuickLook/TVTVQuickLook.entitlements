@@ -20,16 +20,17 @@
 	<true/>
 
 	<!--
-	  DuckDB and the Vortex FFI open the file by POSIX path rather than through
-	  the URL they are handed, and a parquet/duckdb file may pull in sidecar
-	  files beside it. Read-only access to the filesystem covers both. The
-	  preview path never writes: VortexReader.loadPreview reads through
-	  tvtv_vortex_preview directly, with no temp-parquet transcode (that is the
-	  app's paging path, not the preview's).
+	  Deliberately NO com.apple.security.temporary-exception.files.
+	  absolute-path.read-only. Quick Look issues a kernel-level sandbox
+	  extension token for the specific file it previews, so DuckDB and the
+	  Vortex FFI can open that path directly even though they use POSIX open()
+	  rather than the URL they were handed. Measured on .parquet and .vtx, with
+	  the blanket "/" read exception and without it: the extension spawns and
+	  logs zero sandbox denials either way, so the exception granted read access
+	  to every file the user can read and bought nothing. The preview parses
+	  untrusted data files through
+	  DuckDB and a Rust FFI, which is precisely the surface the sandbox is meant
+	  to contain — so it stays narrow.
 	-->
-	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
-	<array>
-		<string>/</string>
-	</array>
 </dict>
 </plist>
