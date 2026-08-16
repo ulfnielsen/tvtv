@@ -70,6 +70,7 @@
 		8A4EA3212A7AFE213063D953 /* DataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSource.swift; sourceTree = "<group>"; };
 		91156999B7BC35000B7B8690 /* TVTVAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TVTVAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABD3BFC880081D4504768618 /* TVTVApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TVTVApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAF51247FE016614CD3564E7 /* TVTVQuickLook.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TVTVQuickLook.entitlements; sourceTree = "<group>"; };
 		FD15D38A5F18D0F97F8E3124 /* PreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewController.swift; sourceTree = "<group>"; };
 		FED6475F9540DF887F1370EE /* SQLEditorAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLEditorAppTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -162,6 +163,7 @@
 			children = (
 				6D83DF9FB51E8A80A5A5CFED /* Info.plist */,
 				FD15D38A5F18D0F97F8E3124 /* PreviewViewController.swift */,
+				FAF51247FE016614CD3564E7 /* TVTVQuickLook.entitlements */,
 			);
 			path = TVTVQuickLook;
 			sourceTree = "<group>";
@@ -372,6 +374,7 @@
 		0BAE46BB577CFBF72758625B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TVTVQuickLook/TVTVQuickLook.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = TVTVQuickLook/Info.plist;
@@ -478,6 +481,7 @@
 		2D882539892747C01F8E7371 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TVTVQuickLook/TVTVQuickLook.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = TVTVQuickLook/Info.plist;

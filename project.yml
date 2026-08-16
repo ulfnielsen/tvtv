@@ -94,6 +94,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.tvtv.app.quicklook
         PRODUCT_NAME: TVTVQuickLook
         INFOPLIST_FILE: TVTVQuickLook/Info.plist
+        # Quick Look preview extensions must be sandboxed or PlugInKit never
+        # registers them. See TVTVQuickLook.entitlements for the details.
+        CODE_SIGN_ENTITLEMENTS: TVTVQuickLook/TVTVQuickLook.entitlements
         SKIP_INSTALL: YES
         ENABLE_HARDENED_RUNTIME: YES
         OTHER_LDFLAGS: $(inherited) -Xlinker -force_load -Xlinker $(SRCROOT)/rust/tvtv-vortex/target/release/libtvtv_vortex.a -Xlinker -export_dynamic

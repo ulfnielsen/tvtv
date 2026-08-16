@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Quick Look preview extensions must be sandboxed: without
+	  com.apple.security.app-sandbox, PlugInKit silently declines to register
+	  the extension at all (`pluginkit -m -i com.tvtv.app.quicklook` returns no
+	  record, not even a disabled one) and Finder previews never appear.
+
+	  The host app, TVTV.app, is deliberately NOT sandboxed — it opens
+	  multi-GB files the user picks and writes edits back over them. Only this
+	  extension is, which is the same split the sibling TVMV app uses.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+
+	<!-- Quick Look hands the extension a file the user selected in Finder. -->
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+
+	<!--
+	  DuckDB and the Vortex FFI open the file by POSIX path rather than through
+	  the URL they are handed, and a parquet/duckdb file may pull in sidecar
+	  files beside it. Read-only access to the filesystem covers both. The
+	  preview path never writes: VortexReader.loadPreview reads through
+	  tvtv_vortex_preview directly, with no temp-parquet transcode (that is the
+	  app's paging path, not the preview's).
+	-->
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
+	<array>
+		<string>/</string>
+	</array>
+</dict>
+</plist>
