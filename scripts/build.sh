@@ -18,6 +18,8 @@
 #   * This machine's `xcode-select` points at CommandLineTools, so we force
 #     DEVELOPER_DIR to the full Xcode toolchain.
 #   * The Rust staticlib is built automatically as an Xcode build phase.
+#   * Signing identity comes from scripts/signing.sh: a Developer ID certificate
+#     when one is present, ad-hoc otherwise. Override with $TVTV_IDENTITY.
 #   * macOS-only app: the harmless "CoreSimulator is out of date / iOS
 #     Simulator" chatter xcodebuild prints is filtered out by default (it does
 #     not affect the build). Use --verbose to see the raw output.
@@ -28,6 +30,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+
+# Resolves the signing identity; tvtv_sign_settings is called below, once the
+# configuration is known (Debug and Release sign differently).
+# shellcheck source=scripts/signing.sh
+source "$REPO_ROOT/scripts/signing.sh"
 
 # Default to an OPTIMIZED Release build — this is the app you actually run, and
 # a Debug Swift build is dramatically slower (measured ~4.6s vs ~3.0s open on a
@@ -53,19 +60,24 @@ DIST="$REPO_ROOT/dist"
 # Benign, macOS-irrelevant simulator chatter to hide unless --verbose.
 NOISE='CoreSimulator|iOSSimulator|DVTCoreSimulator|DVTErrorPresenter|Simulator device support disabled|Unable to load simulator|version of the CoreSimulator framework|installed all available updates to your Mac|most recent version of Xcode supported'
 
+tvtv_sign_settings "$CONFIG"
+
 echo "==> Building TVTV.app ($CONFIG)  [derivedData: build/xcode]"
+tvtv_report_identity
 
 set +e
 if [ "$VERBOSE" -eq 1 ]; then
     xcodebuild \
         -project TVTV.xcodeproj -scheme TVTVApp -configuration "$CONFIG" \
-        -destination 'platform=macOS' -derivedDataPath "$DERIVED" build
+        -destination 'platform=macOS' -derivedDataPath "$DERIVED" \
+        "${TVTV_SIGN_SETTINGS[@]}" build
     STATUS=$?
 else
     # Merge both streams, drop the simulator noise, keep the real exit code.
     xcodebuild \
         -project TVTV.xcodeproj -scheme TVTVApp -configuration "$CONFIG" \
-        -destination 'platform=macOS' -derivedDataPath "$DERIVED" build 2>&1 \
+        -destination 'platform=macOS' -derivedDataPath "$DERIVED" \
+        "${TVTV_SIGN_SETTINGS[@]}" build 2>&1 \
         | grep -avE "$NOISE"
     STATUS=${PIPESTATUS[0]}
 fi
@@ -83,9 +95,12 @@ if [ ! -d "$BUILT_APP" ]; then
 fi
 
 # Publish a clean, predictable copy at ./dist/TVTV.app.
+# ditto, not cp -R: it copies extended attributes and the code signature
+# verbatim. That matters once releases are notarized — the stapled ticket is an
+# extended attribute, and a copy that drops it silently un-staples the app.
 mkdir -p "$DIST"
 rm -rf "$DIST/TVTV.app"
-cp -R "$BUILT_APP" "$DIST/TVTV.app"
+ditto "$BUILT_APP" "$DIST/TVTV.app"
 
 echo
 echo "✅ Built: dist/TVTV.app   ($(du -sh "$DIST/TVTV.app" | awk '{print $1}'))"

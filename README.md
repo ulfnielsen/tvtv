@@ -42,7 +42,58 @@ scripts/build.sh --run      # build, then launch
 ```
 
 The Rust staticlib is built automatically as a pre-compile step. Version is
-stamped via `scripts/version.sh <major.minor.patch>`.
+stamped via `scripts/version.sh set 1.2.3` or `scripts/version.sh bump patch`,
+which writes `project.yml` and regenerates the Xcode project.
+
+## Signing
+
+`scripts/signing.sh` resolves one identity per build, in priority order:
+
+1. `$TVTV_IDENTITY` — explicit override (a SHA-1 hash, a full certificate name,
+   or `-` to force ad-hoc)
+2. a **Developer ID Application** certificate auto-detected from the keychain
+3. `-` — ad-hoc, so a Mac with no certificate still builds and runs TVTV
+
+Ad-hoc builds run on the build machine only: they cannot be notarized, and
+Gatekeeper rejects them everywhere else. The hardened runtime is on in *every*
+configuration (`ENABLE_HARDENED_RUNTIME` in `project.yml`) — notarization
+requires it, so a build that breaks under it should fail on the dev loop, not at
+release time. Release builds additionally set
+`CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO`: TVTV declares no entitlements, and
+Xcode's injected default is `get-task-allow`, which the notary service rejects.
+
+Signing stays inside-out and stays Xcode's job — the QuickLook appex is signed
+before it is embedded, then sealed by reference in the app's signature. Nothing
+re-signs a finished bundle, and nothing uses `--deep`.
+
+## Releasing
+
+```bash
+scripts/release.sh              # patch bump: 1.0.0 -> 1.0.1
+scripts/release.sh minor        # 1.0.1 -> 1.1.0
+scripts/release.sh --dry-run    # everything except commit/tag/push/publish
+```
+
+The script runs the tests, stamps the version, builds and signs, asserts the app
+*and* the embedded appex are Developer ID signed with the hardened runtime and a
+secure timestamp, notarizes and staples the app, packages a stapled `.zip` and a
+separately notarized + stapled `.dmg`, then commits, tags, pushes, and creates
+the GitHub release with both assets. Any failure after the version stamp reverts
+it, leaving the tree as found.
+
+`--dry-run` stops after packaging — nothing is committed, tagged, pushed or
+published, and the version stamp is rolled back. It still submits to Apple, so
+it genuinely exercises the part that can fail.
+
+One-time setup, alongside `gh auth login` and a Developer ID certificate:
+
+```sh
+xcrun notarytool store-credentials tvtv-notary \
+    --key <AuthKey_XXXXXXXXXX.p8> --key-id <KEYID> --issuer <ISSUER-UUID>
+```
+
+Override the profile name with `$TVTV_NOTARY_PROFILE`. Each release makes two
+notary submissions (app, then disk image), typically 1–5 minutes each.
 
 ## Benchmarking
 

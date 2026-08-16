@@ -11,3 +11,6 @@ dist/
 
 # Local SDD / agent scratch
 .superpowers/
+
+# macOS Finder metadata
+.DS_Store
