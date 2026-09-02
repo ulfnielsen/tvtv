@@ -218,6 +218,13 @@ scripts/build.sh --release || abort_release "build failed"
 echo "==> verifying signatures"
 assert_release_signature "$APP" "TVTV.app"
 assert_release_signature "$APPEX" "TVTVQuickLook.appex"
+# A test bundle inside the app is signed for development only and the notary
+# service rejects the whole submission for it. build.sh now starts each build
+# from an empty bundle, but check the artifact rather than trust the process.
+if find "$APP" -name '*.xctest' -print -quit | grep -q .; then
+    abort_release "the app bundle contains a test bundle (*.xctest) — a stale product?"
+fi
+echo "    no test bundles inside the app"
 # --verify --deep is fine and correct: verification walks nested code, unlike
 # --deep on *signing*, which re-signs it blind.
 codesign --verify --deep --strict "$APP" \

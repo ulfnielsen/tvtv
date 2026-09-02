@@ -65,6 +65,13 @@ tvtv_sign_settings "$CONFIG"
 echo "==> Building TVTV.app ($CONFIG)  [derivedData: build/xcode]"
 tvtv_report_identity
 
+# Start from an empty bundle. xcodebuild only ADDS to an existing product, so
+# anything a previous build left inside TVTV.app that this build does not
+# produce rides along — e.g. the unit-test bundle `xcodebuild test` injects
+# under Contents/PlugIns, which is signed for development only and fails
+# notarization (it did, for what would have been v1.0.4).
+rm -rf "$DERIVED/Build/Products/$CONFIG/TVTV.app"
+
 set +e
 if [ "$VERBOSE" -eq 1 ]; then
     xcodebuild \
