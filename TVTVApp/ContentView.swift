@@ -70,7 +70,15 @@ final class AppModel {
     var focusSearchToken: Int = 0
 
     /// Extensions the open panel / drop flow accept.
-    static let openableExtensions = ["parquet", "csv", "tsv", "duckdb", "db"]
+    static let openableExtensions = ["parquet", "csv", "tsv", "duckdb", "db", "json", "ndjson"]
+
+    /// CDISC metadata of the current file when it is Dataset-JSON — what
+    /// `save`/`saveAs` re-serialize verbatim. `nil` for every other format.
+    private(set) var datasetJSONMetadata: DatasetJSON.Metadata?
+
+    /// The temp parquet backing `data` for conversion-based formats (Vortex,
+    /// Dataset-JSON); deleted when the next open supersedes it.
+    private var tempParquetURL: URL?
 
     init() {
         // In-memory DuckDB. Connecting to an in-memory store is a
@@ -95,12 +103,20 @@ final class AppModel {
             }
             let opened = try DataSource.open(url: url, connection: connection)
             coordinator.switchTo(view: opened.viewName, columns: opened.columns)
+            // The previous open's temp parquet (if any) is now unreferenced.
+            if let old = tempParquetURL {
+                try? FileManager.default.removeItem(at: old)
+            }
+            tempParquetURL = opened.tempParquetURL
+            datasetJSONMetadata = opened.datasetJSON
             currentFileName = url.lastPathComponent
             currentFileURL = url
             currentTableAlias = opened.tableAlias
             openedColumns = opened.columns
             hasData = true
-            errorMessage = nil
+            // A successful open clears the banner — unless the open itself
+            // has something to warn about (e.g. records mismatch).
+            errorMessage = opened.warning
             // A newly-opened file supersedes any SQL editor state from the
             // previous file.
             showSQL = false
@@ -230,34 +246,86 @@ final class AppModel {
     }
 
     /// Write the edited table back over the original file (⌘S). Supported for
-    /// parquet/csv/tsv; for other formats, points the user at Save As.
+    /// parquet/csv/tsv/Dataset-JSON; for other formats, points at Save As.
     func save() {
         guard coordinator.isEditing, let url = currentFileURL else { return }
-        guard let options = Self.copyOptions(forExtension: url.pathExtension.lowercased()) else {
-            errorMessage = "Saving edits back to .\(url.pathExtension) isn't supported — use Save As to write a .parquet or .csv copy."
-            return
-        }
-        if writeEdits(toPath: url.path, options: options) {
+        if writeEdited(to: url) {
             coordinator.markSaved()
-            errorMessage = nil
         }
     }
 
     /// Write the edited table to a new file chosen via a save panel (⌘⇧S).
+    /// Dataset-JSON targets are offered only when the open file IS
+    /// Dataset-JSON (its CDISC metadata can't be synthesized for other data).
     func saveAs() {
         guard coordinator.isEditing else { return }
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "parquet"), .commaSeparatedText].compactMap { $0 }
+        var types = [UTType(filenameExtension: "parquet"), .commaSeparatedText]
+        if datasetJSONMetadata != nil {
+            types += [.json, UTType(filenameExtension: "ndjson")]
+        }
+        panel.allowedContentTypes = types.compactMap { $0 }
         let base = (currentFileName as NSString?)?.deletingPathExtension ?? "export"
-        panel.nameFieldStringValue = "\(base)-edited.parquet"
+        let defaultExtension = datasetJSONMetadata != nil
+            ? (currentFileURL?.pathExtension.lowercased() ?? "parquet") : "parquet"
+        panel.nameFieldStringValue = "\(base)-edited.\(defaultExtension)"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        guard let options = Self.copyOptions(forExtension: url.pathExtension.lowercased()) else {
-            errorMessage = "Save As supports .parquet or .csv."
-            return
+        if writeEdited(to: url) {
+            coordinator.markSaved()
+        }
+    }
+
+    /// Format dispatch shared by `save`/`saveAs`: Dataset-JSON through
+    /// `DatasetJSON.write`, everything else through DuckDB `COPY`. Returns
+    /// success; failure leaves the explanation in `errorMessage` (success
+    /// clears it, unless the post-save view refresh leaves a warning).
+    private func writeEdited(to url: URL) -> Bool {
+        let ext = url.pathExtension.lowercased()
+        if ext == "json" || ext == "ndjson" {
+            guard let metadata = datasetJSONMetadata else {
+                errorMessage = "Saving as Dataset-JSON needs a file opened as Dataset-JSON — "
+                    + "TVTV can't synthesize CDISC metadata. Choose .parquet or .csv instead."
+                return false
+            }
+            do {
+                try DatasetJSON.write(
+                    view: DataGridCoordinator.editView, metadata: metadata,
+                    connection: connection, to: url)
+            } catch {
+                errorMessage = "Save failed: \((error as? LocalizedError)?.errorDescription ?? "\(error)")"
+                return false
+            }
+            errorMessage = nil
+            if url == currentFileURL {
+                refreshDatasetJSONBackingSnapshot()
+            }
+            return true
+        }
+        guard let options = Self.copyOptions(forExtension: ext) else {
+            errorMessage = "Saving edits back to .\(url.pathExtension) isn't supported — "
+                + "use Save As to write a .parquet or .csv copy."
+            return false
         }
         if writeEdits(toPath: url.path, options: options) {
-            coordinator.markSaved()
             errorMessage = nil
+            return true
+        }
+        return false
+    }
+
+    /// Rotate the temp parquet behind `data` to a snapshot of the just-saved
+    /// edit table (see `DataSource.refreshTranscodedDataView`). On failure the
+    /// save itself stands — surface the staleness instead of failing.
+    private func refreshDatasetJSONBackingSnapshot() {
+        do {
+            let fresh = try DataSource.refreshTranscodedDataView(
+                fromEditTable: DataGridCoordinator.editView, connection: connection)
+            if let old = tempParquetURL {
+                try? FileManager.default.removeItem(at: old)
+            }
+            tempParquetURL = fresh
+        } catch {
+            errorMessage = "Saved, but the on-screen copy may be stale — use Reload to re-read the file."
         }
     }
 
@@ -463,7 +531,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             Text("Open a file to view it")
                 .font(.title2)
-            Text("Drag a .parquet, .csv, .tsv, or .duckdb file here — or use File ▸ Open.")
+            Text("Drag a .parquet, .csv, .tsv, .duckdb, or Dataset-JSON file here — or use File ▸ Open.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button("Open…") { model.openViaPanel() }

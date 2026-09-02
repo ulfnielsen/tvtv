@@ -1,6 +1,7 @@
 # TVTV
 
-TVTV is a fast macOS viewer for **parquet, csv, vortex, and duckdb** files. It
+TVTV is a fast macOS viewer for **parquet, csv, vortex, duckdb, and CDISC
+Dataset-JSON** files. It
 opens very large tables (100M+ rows) quickly and stays responsive by paging
 data on demand rather than loading whole files into memory.
 
@@ -17,6 +18,12 @@ data on demand rather than loading whole files into memory.
   As (⇧⌘S); undo with ⌘Z.
 - **Toolbar** — open, attach another file as a table, reload, export to CSV.
 - **Minimap** — scroll-position overview; click or drag it to jump.
+- **Dataset-JSON** — CDISC Dataset-JSON v1.1 (`.json` and the streaming
+  `.ndjson`) opens with typed columns; edits save back with all CDISC metadata
+  (OIDs, labels, formats) preserved verbatim and `decimal` values kept exact.
+  Files of 128MB and up transcode single-threaded so opening peaks at
+  roughly the file's size in RAM (`.json` is first split into row lines,
+  then transcoded like `.ndjson`); smaller files use every core.
 - **QuickLook** — Finder previews for parquet / csv / duckdb / vortex.
 
 ## Architecture

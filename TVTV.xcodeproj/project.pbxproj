@@ -10,6 +10,7 @@
 		16E13147A0D46138ADF502F4 /* TVTVCore in Frameworks */ = {isa = PBXBuildFile; productRef = C930725444322435F903B4F3 /* TVTVCore */; };
 		22CD01DDE215C1E2A0344E7C /* TVTVQuickLook.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 60CD35E12DD6084975FDEB51 /* TVTVQuickLook.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2B467C3A136E1826B5E165DD /* SQLEditorAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED6475F9540DF887F1370EE /* SQLEditorAppTests.swift */; };
+		382487A735A708EF70EE0DE3 /* DatasetJSONTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F37CE94B0337BC8F98557A2C /* DatasetJSONTests.swift */; };
 		408F90AEAAD7AA388CB39ACF /* CompletionPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B722B876103A23551F6DE3 /* CompletionPopup.swift */; };
 		668E7B7F9E1A00144844B5D6 /* TVTVCore in Frameworks */ = {isa = PBXBuildFile; productRef = EE17960882D88C624D4238D4 /* TVTVCore */; };
 		6F63D96F94B88F72F8B64397 /* DataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D99120620E8A7CA9152D006 /* DataSourceTests.swift */; };
@@ -70,6 +71,7 @@
 		8A4EA3212A7AFE213063D953 /* DataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSource.swift; sourceTree = "<group>"; };
 		91156999B7BC35000B7B8690 /* TVTVAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TVTVAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		ABD3BFC880081D4504768618 /* TVTVApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TVTVApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F37CE94B0337BC8F98557A2C /* DatasetJSONTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatasetJSONTests.swift; sourceTree = "<group>"; };
 		FAF51247FE016614CD3564E7 /* TVTVQuickLook.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TVTVQuickLook.entitlements; sourceTree = "<group>"; };
 		FD15D38A5F18D0F97F8E3124 /* PreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewController.swift; sourceTree = "<group>"; };
 		FED6475F9540DF887F1370EE /* SQLEditorAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLEditorAppTests.swift; sourceTree = "<group>"; };
@@ -128,6 +130,7 @@
 		4FEEC5304173073825731B1F /* TVTVAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				F37CE94B0337BC8F98557A2C /* DatasetJSONTests.swift */,
 				4D99120620E8A7CA9152D006 /* DataSourceTests.swift */,
 				FED6475F9540DF887F1370EE /* SQLEditorAppTests.swift */,
 			);
@@ -331,6 +334,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6F63D96F94B88F72F8B64397 /* DataSourceTests.swift in Sources */,
+				382487A735A708EF70EE0DE3 /* DatasetJSONTests.swift in Sources */,
 				2B467C3A136E1826B5E165DD /* SQLEditorAppTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

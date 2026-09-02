@@ -2,6 +2,7 @@
 .swiftpm/
 DerivedData/
 data/bench/
+data/cdisc-examples/
 rust/tvtv-vortex/target/
 rust/tvtv-vortex/include/
 *.xcuserstate

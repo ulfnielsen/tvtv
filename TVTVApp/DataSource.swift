@@ -30,6 +30,16 @@ enum DataSource {
         let viewName: String
         let columns: [ColumnInfo]
         let tableAlias: String?
+        /// Parsed CDISC metadata when the file is Dataset-JSON — retained so
+        /// Save can re-serialize it verbatim. `nil` for every other format.
+        let datasetJSON: DatasetJSON.Metadata?
+        /// The temporary transcoded Parquet backing `data` for
+        /// conversion-based formats (Vortex, Dataset-JSON). The caller owns
+        /// deleting it once it stops paging over it (e.g. on the next open).
+        let tempParquetURL: URL?
+        /// Non-fatal problem worth showing the user (e.g. a Dataset-JSON
+        /// whose declared record count doesn't match its rows).
+        let warning: String?
     }
 
     enum OpenError: LocalizedError {
@@ -72,6 +82,10 @@ enum DataSource {
         // references it. Best-effort: a no-op if nothing is attached.
         try? connection.execute("DETACH \(quotedIdentifier(attachedDBAlias))")
 
+        var datasetJSON: DatasetJSON.Metadata? = nil
+        var tempParquetURL: URL? = nil
+        var warning: String? = nil
+
         switch ext {
         case "parquet":
             try createDataView(from: "read_parquet('\(path)')", connection: connection)
@@ -84,7 +98,33 @@ enum DataSource {
             // Parquet (via the Rust reader) and page over that — real types,
             // full paging. The temp file lives in the OS temp dir.
             let parquet = try VortexReader.convertToParquet(url)
+            tempParquetURL = parquet
             try createDataView(from: "read_parquet('\(escapedLiteral(parquet.path))')", connection: connection)
+        case "json", "ndjson":
+            // Dataset-JSON (CDISC). DuckDB's JSON extension reads the file,
+            // but not its columns-metadata + positional row-arrays shape
+            // directly — transcode to a temporary Parquet (same pattern as
+            // Vortex) and page over that.
+            let conversion: DatasetJSON.Conversion
+            do {
+                conversion = try DatasetJSON.convertToParquet(url: url)
+            } catch let error as DatasetJSON.ReadError {
+                throw OpenError.underlying(
+                    error.errorDescription ?? "Could not read Dataset-JSON file.")
+            }
+            datasetJSON = conversion.metadata
+            tempParquetURL = conversion.parquetURL
+            warning = conversion.warning
+            do {
+                try createDataView(
+                    from: "read_parquet('\(escapedLiteral(conversion.parquetURL.path))')",
+                    connection: connection)
+            } catch {
+                // Don't strand the transcoded temp parquet when no view ends
+                // up referencing it.
+                try? FileManager.default.removeItem(at: conversion.parquetURL)
+                throw error
+            }
         default:
             throw OpenError.unsupportedExtension(ext)
         }
@@ -101,7 +141,9 @@ enum DataSource {
                 "CREATE OR REPLACE VIEW \(quotedIdentifier(alias)) AS SELECT * FROM \(quotedIdentifier(viewName))")
             tableAlias = alias
         }
-        return Opened(viewName: viewName, columns: columns, tableAlias: tableAlias)
+        return Opened(
+            viewName: viewName, columns: columns, tableAlias: tableAlias,
+            datasetJSON: datasetJSON, tempParquetURL: tempParquetURL, warning: warning)
     }
 
     /// Attach `url` as an ADDITIONAL named view (distinct from the main `data`
@@ -115,6 +157,17 @@ enum DataSource {
         switch ext {
         case "parquet": source = "read_parquet('\(path)')"
         case "csv", "tsv": source = "read_csv('\(path)', auto_detect=true)"
+        case "json", "ndjson":
+            // Dataset-JSON: transcode like `open` does. The temp parquet
+            // lives as long as the attached view might be queried (the
+            // session), so it is left to the OS temp-dir cleanup.
+            do {
+                let conversion = try DatasetJSON.convertToParquet(url: url)
+                source = "read_parquet('\(escapedLiteral(conversion.parquetURL.path))')"
+            } catch let error as DatasetJSON.ReadError {
+                throw OpenError.underlying(
+                    error.errorDescription ?? "Could not read Dataset-JSON file.")
+            }
         default: throw OpenError.unsupportedExtension(ext)
         }
         let name = sanitizedViewName(url.deletingPathExtension().lastPathComponent)
@@ -125,6 +178,30 @@ enum DataSource {
             throw OpenError.underlying("Could not attach file: \(error)")
         }
         return name
+    }
+
+    /// After a Dataset-JSON save, re-point `data` at a fresh parquet snapshot
+    /// of the just-saved edit table. Unlike parquet/csv (whose `data` view
+    /// re-reads the file on every page), a transcoded format's `data` keeps
+    /// serving the open-time snapshot — without this refresh, leaving edit
+    /// mode visibly reverts the edit and a LATER save (data_edit is
+    /// re-materialized from `data`) silently writes pre-save data back over
+    /// the file. Returns the fresh temp parquet; the caller owns deleting the
+    /// previous one.
+    static func refreshTranscodedDataView(fromEditTable editTable: String, connection: Connection) throws -> URL {
+        let fresh = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tvtv-datasetjson-\(UUID().uuidString).parquet")
+        do {
+            try connection.execute(
+                "COPY (SELECT * FROM \(quotedIdentifier(editTable)) ORDER BY rowid) "
+                + "TO '\(escapedLiteral(fresh.path))' (FORMAT PARQUET)")
+            try createDataView(from: "read_parquet('\(escapedLiteral(fresh.path))')", connection: connection)
+        } catch let error as OpenError {
+            throw error
+        } catch {
+            throw OpenError.underlying("Could not refresh the view of the saved file: \(error)")
+        }
+        return fresh
     }
 
     /// Turn a file base-name into a safe SQL identifier (letters/digits/`_`,
