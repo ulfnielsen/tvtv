@@ -14,9 +14,12 @@ data on demand rather than loading whole files into memory.
 - **SQL editor** — run DuckDB SQL over the open file (⌘-Return), with keyword/
   table/column autocomplete. The current file is queryable as `data` or by its
   file name.
-- **Cell editing** — double-click to edit; save back to the file (⌘S) or Save
-  As (⇧⌘S); undo with ⌘Z.
-- **Toolbar** — open, attach another file as a table, reload, export to CSV.
+- **Cell editing** — double-click to edit; save back to the file (⌘S); undo
+  with ⌘Z.
+- **Save As** (⇧⌘S) — save an opened file, edits, or SQL results as Parquet or
+  CSV, without entering editing mode. Dataset-JSON files can also be saved
+  with their CDISC metadata preserved.
+- **Toolbar** — open, attach another file as a table, reload, Save As.
 - **Minimap** — scroll-position overview; click or drag it to jump.
 - **Dataset-JSON** — CDISC Dataset-JSON v1.1 (`.json` and the streaming
   `.ndjson`) opens with typed columns; edits save back with all CDISC metadata

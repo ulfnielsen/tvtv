@@ -180,25 +180,6 @@ final class AppModel {
         open(url: url)
     }
 
-    /// Export the currently-shown view to a CSV via a save panel (toolbar
-    /// Export). Uses DuckDB's `COPY … TO … (FORMAT CSV, HEADER)`.
-    func exportCSV() {
-        guard hasData else { return }
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType.commaSeparatedText]
-        let base = (currentFileName as NSString?)?.deletingPathExtension ?? "export"
-        panel.nameFieldStringValue = "\(base).csv"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        let view = coordinator.isQueryResult ? DataGridCoordinator.queryResultView : DataSource.viewName
-        let escapedPath = url.path.replacingOccurrences(of: "'", with: "''")
-        do {
-            try connection.execute(
-                "COPY (SELECT * FROM \"\(view)\") TO '\(escapedPath)' (FORMAT CSV, HEADER)")
-        } catch {
-            errorMessage = "Export failed: \((error as? LocalizedError)?.errorDescription ?? "\(error)")"
-        }
-    }
-
     /// Attach another file as an additional named view (toolbar Attach), so it
     /// can be referenced (e.g. joined) from the SQL editor. The view is
     /// named after the file's base name (sanitized); on success the SQL editor
@@ -249,47 +230,75 @@ final class AppModel {
     /// parquet/csv/tsv/Dataset-JSON; for other formats, points at Save As.
     func save() {
         guard coordinator.isEditing, let url = currentFileURL else { return }
-        if writeEdited(to: url) {
+        if writeData(from: DataGridCoordinator.editView, to: url) {
             coordinator.markSaved()
         }
     }
 
-    /// Write the edited table to a new file chosen via a save panel (⌘⇧S).
-    /// Dataset-JSON targets are offered only when the open file IS
-    /// Dataset-JSON (its CDISC metadata can't be synthesized for other data).
+    /// Write the opened file, edited table, or SQL result to a new file (⌘⇧S).
+    /// Dataset-JSON targets are offered for the file and its edits, whose
+    /// columns still match the original CDISC metadata.
     func saveAs() {
-        guard coordinator.isEditing else { return }
+        guard hasData else { return }
         let panel = NSSavePanel()
         var types = [UTType(filenameExtension: "parquet"), .commaSeparatedText]
-        if datasetJSONMetadata != nil {
+        if datasetJSONMetadata != nil && !coordinator.isQueryResult {
             types += [.json, UTType(filenameExtension: "ndjson")]
         }
         panel.allowedContentTypes = types.compactMap { $0 }
         let base = (currentFileName as NSString?)?.deletingPathExtension ?? "export"
-        let defaultExtension = datasetJSONMetadata != nil
+        let defaultExtension = datasetJSONMetadata != nil && !coordinator.isQueryResult
             ? (currentFileURL?.pathExtension.lowercased() ?? "parquet") : "parquet"
-        panel.nameFieldStringValue = "\(base)-edited.\(defaultExtension)"
+        let suffix = coordinator.isEditing ? "-edited" : "-copy"
+        panel.nameFieldStringValue = "\(base)\(suffix).\(defaultExtension)"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        if writeEdited(to: url) {
+        _ = saveAs(to: url)
+    }
+
+    /// Non-interactive save path shared by the menu and toolbar.
+    @discardableResult
+    func saveAs(to url: URL) -> Bool {
+        guard hasData else { return false }
+        // A file-backed view must not be overwritten while COPY is reading it.
+        guard coordinator.isEditing || url.standardizedFileURL != currentFileURL?.standardizedFileURL else {
+            errorMessage = "Choose a different file for Save As, or enable editing to save changes to the original."
+            return false
+        }
+        let view = coordinator.isEditing ? DataGridCoordinator.editView
+            : coordinator.isQueryResult ? DataGridCoordinator.queryResultView : DataSource.viewName
+        guard writeData(from: view, to: url) else { return false }
+        if coordinator.isEditing {
             coordinator.markSaved()
         }
+        return true
     }
 
     /// Format dispatch shared by `save`/`saveAs`: Dataset-JSON through
     /// `DatasetJSON.write`, everything else through DuckDB `COPY`. Returns
     /// success; failure leaves the explanation in `errorMessage` (success
     /// clears it, unless the post-save view refresh leaves a warning).
-    private func writeEdited(to url: URL) -> Bool {
+    private func writeData(from view: String, to url: URL) -> Bool {
         let ext = url.pathExtension.lowercased()
         if ext == "json" || ext == "ndjson" {
-            guard let metadata = datasetJSONMetadata else {
+            guard let metadata = datasetJSONMetadata, !coordinator.isQueryResult else {
                 errorMessage = "Saving as Dataset-JSON needs a file opened as Dataset-JSON — "
                     + "TVTV can't synthesize CDISC metadata. Choose .parquet or .csv instead."
                 return false
             }
             do {
+                // The Dataset-JSON writer pages by the table's stable rowid.
+                // File views have no rowid, so give this save its own snapshot
+                // without changing the grid or entering editing mode.
+                let snapshot = "dataset_json_save_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+                let needsSnapshot = !coordinator.isEditing
+                if needsSnapshot {
+                    try connection.execute("CREATE TEMP TABLE \"\(snapshot)\" AS SELECT * FROM \"\(view)\"")
+                }
+                defer {
+                    if needsSnapshot { try? connection.execute("DROP TABLE \"\(snapshot)\"") }
+                }
                 try DatasetJSON.write(
-                    view: DataGridCoordinator.editView, metadata: metadata,
+                    view: needsSnapshot ? snapshot : view, metadata: metadata,
                     connection: connection, to: url)
             } catch {
                 errorMessage = "Save failed: \((error as? LocalizedError)?.errorDescription ?? "\(error)")"
@@ -302,11 +311,11 @@ final class AppModel {
             return true
         }
         guard let options = Self.copyOptions(forExtension: ext) else {
-            errorMessage = "Saving edits back to .\(url.pathExtension) isn't supported — "
+            errorMessage = "Saving as .\(url.pathExtension) isn't supported — "
                 + "use Save As to write a .parquet or .csv copy."
             return false
         }
-        if writeEdits(toPath: url.path, options: options) {
+        if writeData(from: view, toPath: url.path, options: options) {
             errorMessage = nil
             return true
         }
@@ -329,12 +338,12 @@ final class AppModel {
         }
     }
 
-    /// `COPY (SELECT * FROM data_edit) TO 'path' <options>`. Returns success.
-    private func writeEdits(toPath path: String, options: String) -> Bool {
+    /// Copy the entire source table or query result, without materializing it for editing.
+    private func writeData(from view: String, toPath path: String, options: String) -> Bool {
         let escaped = path.replacingOccurrences(of: "'", with: "''")
         do {
             try connection.execute(
-                "COPY (SELECT * FROM \"\(DataGridCoordinator.editView)\") TO '\(escaped)' \(options)")
+                "COPY (SELECT * FROM \"\(view)\") TO '\(escaped)' \(options)")
             return true
         } catch {
             errorMessage = "Save failed: \((error as? LocalizedError)?.errorDescription ?? "\(error)")"
@@ -411,10 +420,10 @@ struct ContentView: View {
                         Image(systemName: "arrow.clockwise")
                     }
                     .help("Reload the current file")
-                    Button { model.exportCSV() } label: {
+                    Button { model.saveAs() } label: {
                         Image(systemName: "square.and.arrow.down")
                     }
-                    .help("Export to CSV")
+                    .help("Save As… (⇧⌘S) — Parquet or CSV")
                     Button {
                         model.setEditing(!model.coordinator.isEditing)
                     } label: {

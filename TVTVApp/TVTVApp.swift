@@ -37,21 +37,30 @@ struct TVTVApp: App {
                     .keyboardShortcut("f", modifiers: .command)
                     .disabled(!model.hasData)
             }
-            // Save / Save As write the edited table back (only while editing).
-            CommandGroup(replacing: .saveItem) {
-                Button("Save") { model.save() }
-                    .keyboardShortcut("s", modifiers: .command)
-                    .disabled(!model.coordinator.isEditing)
-                Button("Save As…") { model.saveAs() }
-                    .keyboardShortcut("s", modifiers: [.command, .shift])
-                    .disabled(!model.coordinator.isEditing)
-            }
+            SaveCommands(model: model)
             // ⌘Z undoes the last cell edit while editing.
             CommandGroup(replacing: .undoRedo) {
                 Button("Undo") { model.undoCellEdit() }
                     .keyboardShortcut("z", modifiers: .command)
                     .disabled(!model.coordinator.isEditing)
             }
+        }
+    }
+}
+
+/// Observe file/editing state in a Commands body so menu availability updates
+/// when a file opens or the toolbar toggles editing.
+private struct SaveCommands: Commands {
+    @Bindable var model: AppModel
+
+    var body: some Commands {
+        CommandGroup(replacing: .saveItem) {
+            Button("Save") { model.save() }
+                .keyboardShortcut("s", modifiers: .command)
+                .disabled(!model.coordinator.isEditing)
+            Button("Save As…") { model.saveAs() }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+                .disabled(!model.hasData)
         }
     }
 }

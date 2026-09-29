@@ -504,6 +504,29 @@ final class DatasetJSONTests: XCTestCase {
             "23.4567890123456789012345")
     }
 
+    @MainActor
+    func testAppModelSaveAsPreservesDatasetJSONWithoutEditing() throws {
+        let source = tempDirectory.appendingPathComponent("dm.ndjson")
+        try writeNDJSONFixture(at: source)
+        let model = AppModel()
+        model.open(url: source)
+        let destination = tempDirectory.appendingPathComponent("copy.ndjson")
+
+        XCTAssertTrue(model.saveAs(to: destination))
+        XCTAssertNil(model.errorMessage)
+        XCTAssertFalse(model.coordinator.isEditing)
+
+        let database = try Database(store: .inMemory)
+        let connection = try database.connect()
+        let reopened = try DataSource.open(url: destination, connection: connection)
+        XCTAssertEqual(reopened.datasetJSON?.columns, model.datasetJSONMetadata?.columns)
+        XCTAssertEqual(reopened.datasetJSON?.label, model.datasetJSONMetadata?.label)
+        XCTAssertEqual(reopened.datasetJSON?.records, 3)
+        XCTAssertEqual(
+            try varcharCell("SELECT BMI FROM data WHERE USUBJID = '001'", connection: connection),
+            "23.4567890123456789012345")
+    }
+
     /// Opening another file must delete the previous open's temp parquet —
     /// the transcode-based flow otherwise leaks one file per open.
     @MainActor
