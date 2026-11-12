@@ -98,7 +98,7 @@ public final class RowStore: @unchecked Sendable {
         self.spec = spec
         self.includesRowID = includesRowID
 
-        let countSQL = "SELECT COUNT(*) FROM \"\(view)\"\(spec.whereClause)"
+        let countSQL = "SELECT COUNT(*) FROM \(Self.quote(view))\(spec.whereClause)"
         if let countResult = try? connection.query(countSQL),
            let count = countResult[0].cast(to: Int64.self)[0] {
             self.totalRowCount = Int(count)
@@ -106,7 +106,7 @@ public final class RowStore: @unchecked Sendable {
             self.totalRowCount = 0
         }
 
-        let schemaSQL = "SELECT * FROM \"\(view)\" LIMIT 0"
+        let schemaSQL = "SELECT * FROM \(Self.quote(view)) LIMIT 0"
         if let schemaResult = try? connection.query(schemaSQL) {
             self.columnNames = (0..<schemaResult.columnCount).map { schemaResult.columnName(at: $0) }
         } else {
@@ -163,14 +163,14 @@ public final class RowStore: @unchecked Sendable {
 
         let offset = page * pageSize
         let limit = pageSize
-        var projection = columnNames.map { "\"\($0)\"::VARCHAR" }.joined(separator: ", ")
+        var projection = columnNames.map { "\(Self.quote($0))::VARCHAR" }.joined(separator: ", ")
         // When editing, tack the implicit rowid on as the LAST result column
         // (uncast — kept as BIGINT), so it never appears in the displayed
         // `columnNames`/cells but is available for `UPDATE … WHERE rowid = …`.
         if includesRowID {
             projection += ", rowid"
         }
-        let sql = "SELECT \(projection) FROM \"\(view)\"\(spec.whereClause)\(spec.orderBy) LIMIT \(limit) OFFSET \(offset)"
+        let sql = "SELECT \(projection) FROM \(Self.quote(view))\(spec.whereClause)\(spec.orderBy) LIMIT \(limit) OFFSET \(offset)"
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
@@ -210,6 +210,12 @@ public final class RowStore: @unchecked Sendable {
         }
     }
 
+    /// Double-quoted SQL identifier with embedded `"` doubled, so a view or
+    /// column name taken from a file can't break out of the identifier.
+    static func quote(_ identifier: String) -> String {
+        "\"" + identifier.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
     /// The view's column names, in SOURCE order (the order `row(at:)` cells
     /// are indexed in).
     public var columns: [String] { columnNames }
@@ -244,8 +250,8 @@ public final class RowStore: @unchecked Sendable {
     }
 
     private func fetchUncached(offset: Int, limit: Int) -> [[Cell]] {
-        let projection = columnNames.map { "\"\($0)\"::VARCHAR" }.joined(separator: ", ")
-        let sql = "SELECT \(projection) FROM \"\(view)\"\(spec.whereClause)\(spec.orderBy) LIMIT \(limit) OFFSET \(offset)"
+        let projection = columnNames.map { "\(Self.quote($0))::VARCHAR" }.joined(separator: ", ")
+        let sql = "SELECT \(projection) FROM \(Self.quote(view))\(spec.whereClause)\(spec.orderBy) LIMIT \(limit) OFFSET \(offset)"
         guard let result = try? connection.query(sql) else { return [] }
         let columns = (0..<Int(result.columnCount)).map { result[DBInt($0)].cast(to: String.self) }
         return (0..<DBInt(result.rowCount)).map { r in

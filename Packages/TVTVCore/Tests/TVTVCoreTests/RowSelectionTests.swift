@@ -54,6 +54,22 @@ final class RowSelectionTests: XCTestCase {
         XCTAssertEqual(store.columns, ["id", "label", "note"])
     }
 
+    func test_identifiersWithQuotes_areEscaped_inPagingAndCopy() {
+        try! connection.execute(#"""
+            CREATE VIEW "odd""view" AS SELECT i AS "we""ird", 'x' AS ok FROM range(3) AS t(i)
+            """#)
+        let store = RowStore(connection: connection, view: #"odd"view"#, pageSize: 100)
+        XCTAssertEqual(store.totalRowCount, 3)
+        XCTAssertEqual(store.columns, [#"we"ird"#, "ok"])
+        XCTAssertEqual(store.rows(at: IndexSet([2])).first, [.text("2"), .text("x")])
+        store.ensureLoaded(around: 0)
+        let deadline = Date().addingTimeInterval(5)
+        while store.row(at: 0) == nil && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.02))
+        }
+        XCTAssertEqual(store.row(at: 0), [.text("0"), .text("x")])
+    }
+
     // MARK: - TSV formatting
 
     func test_tsv_nullIsEmpty_andSpecialCharsQuoted() {
