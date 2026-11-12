@@ -30,6 +30,12 @@
 #   xcrun notarytool store-credentials tvtv-notary \
 #       --key <AuthKey_XXXXXXXXXX.p8> --key-id <KEYID> --issuer <ISSUER-UUID>
 #
+# Alternatively, skip the keychain and point notarytool straight at the App
+# Store Connect API key for this run (nothing is stored):
+#
+#   TVTV_NOTARY_KEY=<AuthKey_XXXXXXXXXX.p8> TVTV_NOTARY_KEY_ID=<KEYID> \
+#   TVTV_NOTARY_ISSUER=<ISSUER-UUID> scripts/release.sh
+#
 # Notarization needs network access and normally takes 1-5 minutes per
 # submission; there are two per release (the app, then the disk image).
 
@@ -58,7 +64,7 @@ for arg in "$@"; do
         major|minor|patch) PART="$arg" ;;
         --dry-run)         DRY_RUN=1 ;;
         --draft)           DRAFT=1 ;;
-        -h|--help) sed -n '2,34p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "usage: release.sh [major|minor|patch] [--dry-run] [--draft]" >&2; exit 2 ;;
     esac
 done
@@ -93,8 +99,19 @@ fi
 # Fail fast on missing notary credentials. This is a live authenticated call, so
 # it catches a revoked, expired or mistyped key now rather than after the build.
 NOTARY_PROFILE="${TVTV_NOTARY_PROFILE:-tvtv-notary}"
-echo "==> checking notary credentials (profile: $NOTARY_PROFILE)"
-if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+if [ -n "${TVTV_NOTARY_KEY:-}" ]; then
+    [ -f "$TVTV_NOTARY_KEY" ] || die "TVTV_NOTARY_KEY '$TVTV_NOTARY_KEY' is not a file."
+    [ -n "${TVTV_NOTARY_KEY_ID:-}" ] && [ -n "${TVTV_NOTARY_ISSUER:-}" ] \
+        || die "TVTV_NOTARY_KEY needs TVTV_NOTARY_KEY_ID and TVTV_NOTARY_ISSUER too."
+    NOTARY_AUTH=(--key "$TVTV_NOTARY_KEY" --key-id "$TVTV_NOTARY_KEY_ID" --issuer "$TVTV_NOTARY_ISSUER")
+    NOTARY_DESC="API key $TVTV_NOTARY_KEY_ID"
+else
+    NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
+    NOTARY_DESC="profile: $NOTARY_PROFILE"
+fi
+echo "==> checking notary credentials ($NOTARY_DESC)"
+if ! xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1; then
+    [ -n "${TVTV_NOTARY_KEY:-}" ] && die "notarytool rejected the API key ($NOTARY_DESC)."
     echo "  create it with:" >&2
     echo "    xcrun notarytool store-credentials $NOTARY_PROFILE \\" >&2
     echo "        --key <AuthKey_XXXXXXXXXX.p8> --key-id <KEYID> --issuer <ISSUER-UUID>" >&2
@@ -154,7 +171,7 @@ notarize() {
     local target="$1" out sid
     out="$(mktemp)"
     echo "==> notarizing $(basename "$target") — typically 1-5 minutes"
-    xcrun notarytool submit "$target" --keychain-profile "$NOTARY_PROFILE" --wait 2>&1 | tee "$out"
+    xcrun notarytool submit "$target" "${NOTARY_AUTH[@]}" --wait 2>&1 | tee "$out"
     if grep -q 'status: Accepted' "$out"; then
         echo "    notarization accepted"
         rm -f "$out"
@@ -164,7 +181,7 @@ notarize() {
     sid="$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' "$out" | head -1 || true)"
     if [ -n "$sid" ]; then
         echo "==> notary log for submission $sid:" >&2
-        xcrun notarytool log "$sid" --keychain-profile "$NOTARY_PROFILE" >&2 || true
+        xcrun notarytool log "$sid" "${NOTARY_AUTH[@]}" >&2 || true
     fi
     rm -f "$out"
     return 1
