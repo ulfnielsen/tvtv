@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# release.sh [major|minor|patch] [--dry-run]   (default: patch)
+# release.sh [major|minor|patch] [--dry-run] [--draft]   (default: patch)
 #
 # Cuts a TVTV release:
 #   1. runs the test suite
@@ -11,6 +11,11 @@
 #   6. packages a stapled .zip and a notarized + stapled .dmg
 #   7. commits "Release vX.Y.Z", tags vX.Y.Z
 #   8. pushes branch + tag, and creates a GitHub Release with both assets
+#
+# --draft does everything, but creates the GitHub Release as a DRAFT: the tag
+# and commit are pushed, the assets uploaded, and the notes can be reviewed and
+# edited on GitHub before publishing ("Publish release" there, or
+# `gh release edit vX.Y.Z --draft=false`).
 #
 # --dry-run runs steps 1-6 and then stops: nothing is committed, tagged, pushed
 # or published, and the version stamp is rolled back. That exercises the whole
@@ -47,12 +52,14 @@ STAMPED=(project.yml TVTV.xcodeproj/project.pbxproj)
 
 PART="patch"
 DRY_RUN=0
+DRAFT=0
 for arg in "$@"; do
     case "$arg" in
         major|minor|patch) PART="$arg" ;;
         --dry-run)         DRY_RUN=1 ;;
-        -h|--help) sed -n '2,29p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
-        *) echo "usage: release.sh [major|minor|patch] [--dry-run]" >&2; exit 2 ;;
+        --draft)           DRAFT=1 ;;
+        -h|--help) sed -n '2,34p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "usage: release.sh [major|minor|patch] [--dry-run] [--draft]" >&2; exit 2 ;;
     esac
 done
 
@@ -335,8 +342,13 @@ NOTES="$(mktemp)"
     echo "and no \`xattr\` workaround. Requires macOS 14 or later (Apple silicon)."
 } > "$NOTES"
 
-gh release create "$TAG" "$DMG" "$ZIP" --title "TVTV $VER" --notes-file "$NOTES"
+DRAFT_FLAG=()
+[ "$DRAFT" -eq 1 ] && DRAFT_FLAG=(--draft)
+RELEASE_URL="$(gh release create "$TAG" "$DMG" "$ZIP" --title "TVTV $VER" --notes-file "$NOTES" ${DRAFT_FLAG[@]+"${DRAFT_FLAG[@]}"})"
 rm -f "$NOTES"
 
-NWO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
-echo "==> done: https://github.com/$NWO/releases/tag/$TAG"
+if [ "$DRAFT" -eq 1 ]; then
+    echo "==> draft created (not published): $RELEASE_URL"
+else
+    echo "==> done: $RELEASE_URL"
+fi

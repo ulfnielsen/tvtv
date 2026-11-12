@@ -15,3 +15,6 @@ dist/
 
 # macOS Finder metadata
 .DS_Store
+
+# Per-Xcode-version derived data (e.g. build/xcode-26/)
+build/xcode-*/
