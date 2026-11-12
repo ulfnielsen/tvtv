@@ -211,6 +211,16 @@ public final class DataGridCoordinator {
     /// Total row count of the current view (0 before the first `switchTo`).
     public var totalRowCount: Int { rowStore?.totalRowCount ?? 0 }
 
+    /// Row count of the current view BEFORE the quick-filter WHERE — so the
+    /// status bar can show "N of M rows" while a filter is active. Captured
+    /// whenever a store is built without a WHERE clause (every `switchTo`
+    /// starts that way).
+    public private(set) var unfilteredRowCount: Int = 0
+
+    /// Number of rows selected in the grid (0 after every rebuild — a new
+    /// sort/filter/view means new row indices, so the selection is dropped).
+    public private(set) var selectedRowCount: Int = 0
+
     // MARK: Generation protocol state
 
     /// Monotonic counter bumped on every `switchTo`. A load's captured value is
@@ -584,6 +594,8 @@ public final class DataGridCoordinator {
         let store = RowStore(connection: connection, view: view, pageSize: Self.pageSize, spec: spec,
                              includesRowID: isEditing)
         self.rowStore = store
+        if spec.whereClause.isEmpty { unfilteredRowCount = store.totalRowCount }
+        selectedRowCount = 0
 
         // GridTableView holds its RowStore as a `let`, so a new query always
         // means a new grid instance. The header, though, can be reused
@@ -596,6 +608,9 @@ public final class DataGridCoordinator {
         grid.editingEnabled = isEditing
         grid.onCommitEdit = { [weak self] row, displayColumn, text in
             self?.commitInlineEdit(row: row, displayColumn: displayColumn, text: text)
+        }
+        grid.onSelectionChanged = { [weak self] count in
+            self?.selectedRowCount = count
         }
         let header = headerView
             ?? GridTableHeaderView(

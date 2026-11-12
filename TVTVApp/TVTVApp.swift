@@ -1,4 +1,5 @@
 import SwiftUI
+import TVTVCore
 
 @main
 struct TVTVApp: App {
@@ -36,6 +37,17 @@ struct TVTVApp: App {
                 Button("Find") { model.focusSearch() }
                     .keyboardShortcut("f", modifiers: .command)
                     .disabled(!model.hasData)
+            }
+            // ⌥⌘C next to Edit ▸ Copy: copy the selected grid rows with a
+            // header line of column names. Plain ⌘C is the standard Copy
+            // item, which reaches `GridTableView.copy(_:)` via the responder
+            // chain; this one is sent the same way.
+            CommandGroup(after: .pasteboard) {
+                Button("Copy with Headers") {
+                    NSApp.sendAction(#selector(GridTableView.copyWithHeaders(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("c", modifiers: [.command, .option])
+                .disabled(model.coordinator.selectedRowCount == 0)
             }
             SaveCommands(model: model)
             // ⌘Z undoes the last cell edit while editing.

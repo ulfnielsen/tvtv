@@ -210,6 +210,49 @@ public final class RowStore: @unchecked Sendable {
         }
     }
 
+    /// The view's column names, in SOURCE order (the order `row(at:)` cells
+    /// are indexed in).
+    public var columns: [String] { columnNames }
+
+    /// The cells for every in-range index in `indexes`, ascending, fetched
+    /// SYNCHRONOUSLY — rows on already-loaded pages come from the cache, the
+    /// rest are queried directly (one `LIMIT/OFFSET` per contiguous run,
+    /// honoring the store's WHERE/ORDER BY) without being cached. Used by
+    /// copy, where a selection can span pages the grid never loaded.
+    /// Out-of-range indexes are skipped; a failed query drops its run.
+    public func rows(at indexes: IndexSet) -> [[Cell]] {
+        guard pageSize > 0, totalRowCount > 0 else { return [] }
+        let clamped = indexes.intersection(IndexSet(integersIn: 0..<totalRowCount))
+        var result: [[Cell]] = []
+        result.reserveCapacity(clamped.count)
+        for run in clamped.rangeView {
+            // Split each run at page boundaries so cached pages are reused.
+            var start = run.lowerBound
+            while start < run.upperBound {
+                let page = start / pageSize
+                let end = min(run.upperBound, (page + 1) * pageSize)
+                let cached: [[Cell]]? = stateQueue.sync {
+                    guard let rows = pages[page] else { return nil }
+                    let lo = start - page * pageSize, hi = end - page * pageSize
+                    return hi <= rows.count ? Array(rows[lo..<hi]) : nil
+                }
+                result += cached ?? fetchUncached(offset: start, limit: end - start)
+                start = end
+            }
+        }
+        return result
+    }
+
+    private func fetchUncached(offset: Int, limit: Int) -> [[Cell]] {
+        let projection = columnNames.map { "\"\($0)\"::VARCHAR" }.joined(separator: ", ")
+        let sql = "SELECT \(projection) FROM \"\(view)\"\(spec.whereClause)\(spec.orderBy) LIMIT \(limit) OFFSET \(offset)"
+        guard let result = try? connection.query(sql) else { return [] }
+        let columns = (0..<Int(result.columnCount)).map { result[DBInt($0)].cast(to: String.self) }
+        return (0..<DBInt(result.rowCount)).map { r in
+            columns.map { column in column[r].map(Cell.text) ?? .null }
+        }
+    }
+
     /// The DuckDB `rowid` for display row `index`, or `nil` if that page isn't
     /// loaded or this store isn't tracking rowids. Used by the editor to target
     /// the exact source row for an `UPDATE`.

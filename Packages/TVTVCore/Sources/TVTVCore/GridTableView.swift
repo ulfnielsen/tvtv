@@ -97,7 +97,7 @@ public final class GridTableView: NSView {
     // MARK: AppKit hierarchy
 
     private let scrollView = NSScrollView()
-    private let tableView = NSTableView()
+    private let tableView = GridNSTableView()
 
     /// The scroll-position overview, floating over the bottom-right corner
     /// of the grid (NOT inside `scrollView` — an overlay sibling, so it
@@ -173,6 +173,127 @@ public final class GridTableView: NSView {
     public func scrollToRow(_ row: Int) {
         guard row >= 0, row < rowStore.totalRowCount else { return }
         tableView.scrollRowToVisible(row)
+    }
+
+    // MARK: Row selection
+
+    /// Called (main thread) whenever the selected-row set changes, with the
+    /// number of selected rows.
+    public var onSelectionChanged: ((_ count: Int) -> Void)?
+
+    /// The selected display-row indexes.
+    public var selectedRowIndexes: IndexSet { tableView.selectedRowIndexes }
+
+    /// Replace the selection with `rows` (out-of-range indexes are dropped)
+    /// and scroll the last one into view.
+    public func selectRows(_ rows: IndexSet) {
+        let valid = rows.intersection(IndexSet(integersIn: 0..<rowStore.totalRowCount))
+        tableView.selectRowIndexes(valid, byExtendingSelection: false)
+        if let last = valid.last { tableView.scrollRowToVisible(last) }
+    }
+
+    // MARK: Keyboard navigation
+
+    /// Selection moves the table doesn't do natively (it already handles
+    /// ↑/↓ and ⇧↑/⇧↓).
+    public enum Navigation { case home, end, pageUp, pageDown }
+
+    /// Anchor/cursor of a keyboard-extended selection; reset whenever the
+    /// selection changes some other way (mouse, ↑/↓, programmatic).
+    private var navigationAnchor: Int?
+    private var navigationCursor: Int?
+    private var isNavigating = false
+
+    /// Pure target-row math for `navigate`. `current` is -1 when nothing is
+    /// selected. `nil` when the table is empty.
+    public static func targetRow(for move: Navigation, current: Int, pageRows: Int, total: Int) -> Int? {
+        guard total > 0 else { return nil }
+        let page = max(1, pageRows)
+        let target: Int
+        switch move {
+        case .home: target = 0
+        case .end: target = total - 1
+        case .pageUp: target = max(0, current) - page
+        case .pageDown: target = max(0, current) + page
+        }
+        return min(total - 1, max(0, target))
+    }
+
+    /// Move the selection (or, with `extending`, grow it from its anchor) and
+    /// scroll the target row into view.
+    public func navigate(_ move: Navigation, extending: Bool) {
+        let current = navigationCursor ?? tableView.selectedRow
+        let pageRows = Int(scrollView.contentView.bounds.height / (Self.rowHeight + Self.intercellSpacingHeight))
+        guard let target = Self.targetRow(for: move, current: current,
+                                          pageRows: pageRows, total: rowStore.totalRowCount) else { return }
+        let anchor = extending ? (navigationAnchor ?? max(0, current)) : target
+        isNavigating = true
+        tableView.selectRowIndexes(IndexSet(integersIn: min(anchor, target)...max(anchor, target)),
+                                   byExtendingSelection: false)
+        isNavigating = false
+        navigationAnchor = anchor
+        navigationCursor = target
+        tableView.scrollRowToVisible(target)
+    }
+
+    /// ←/→: scroll horizontally by one column (there is no cell cursor).
+    fileprivate func scrollHorizontally(by direction: Int) {
+        let clip = scrollView.contentView
+        let x = clip.bounds.origin.x
+        let target: CGFloat
+        if direction > 0 {
+            target = columnXPositions.first(where: { $0 > x + 0.5 }) ?? x
+        } else {
+            target = columnXPositions.last(where: { $0 < x - 0.5 }) ?? 0
+        }
+        let maxX = max(0, (scrollView.documentView?.bounds.width ?? 0) - clip.bounds.width)
+        clip.setBoundsOrigin(NSPoint(x: min(maxX, max(0, target)), y: clip.bounds.origin.y))
+        scrollView.reflectScrolledClipView(clip)
+    }
+
+    // MARK: Copy
+
+    /// The selected rows as TSV (display column order; NULL → empty), with an
+    /// optional header line of column names. Capped at `RowClipboard.maxRows`
+    /// rows. `nil` when nothing is selected.
+    public func copyText(includeHeader: Bool) -> String? {
+        let selection = tableView.selectedRowIndexes
+        guard !selection.isEmpty else { return nil }
+        var capped = IndexSet()
+        for run in selection.rangeView {
+            let room = RowClipboard.maxRows - capped.count
+            if room <= 0 { break }
+            capped.insert(integersIn: run.lowerBound..<min(run.upperBound, run.lowerBound + room))
+        }
+        let order = (0..<columnLayout.columnCount).map { columnLayout.sourceIndex(displayIndex: $0) }
+        let names = rowStore.columns
+        let header = includeHeader ? order.map { $0 < names.count ? names[$0] : "" } : nil
+        let rows = rowStore.rows(at: capped).map { cells in
+            order.map { $0 < cells.count ? cells[$0] : .null }
+        }
+        return RowClipboard.tsv(header: header, rows: rows)
+    }
+
+    /// Write `copyText` to `pasteboard`. Beeps when the selection was larger
+    /// than `RowClipboard.maxRows` (only that many rows were copied).
+    @discardableResult
+    public func copySelection(includeHeader: Bool, to pasteboard: NSPasteboard = .general) -> Bool {
+        guard let text = copyText(includeHeader: includeHeader) else { return false }
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        if tableView.selectedRowIndexes.count > RowClipboard.maxRows { NSSound.beep() }
+        return true
+    }
+
+    /// Edit ▸ Copy (⌘C) — reached via the responder chain when the table is
+    /// first responder.
+    @objc public func copy(_ sender: Any?) {
+        copySelection(includeHeader: false)
+    }
+
+    /// Edit ▸ Copy with Headers (⌥⌘C).
+    @objc public func copyWithHeaders(_ sender: Any?) {
+        copySelection(includeHeader: true)
     }
 
     // MARK: Inline cell editing
@@ -257,7 +378,12 @@ public final class GridTableView: NSView {
         tableView.columnAutoresizingStyle = .noColumnAutoresizing
         tableView.headerView = nil // header is GridTableHeaderView, hosted separately
         tableView.gridStyleMask = []
-        tableView.selectionHighlightStyle = .none
+        // Row selection: click, ⇧/⌘-click, ↑/↓ (⇧ extends), ⌘A. The tint is
+        // drawn by GrayRowView.drawSelection.
+        tableView.selectionHighlightStyle = .regular
+        tableView.allowsMultipleSelection = true
+        tableView.allowsEmptySelection = true
+        tableView.owner = self
 
         let column = NSTableColumn(identifier: Self.columnIdentifier)
         column.resizingMask = []
@@ -543,6 +669,14 @@ extension GridTableView: NSTableViewDataSource {
 
 extension GridTableView: NSTableViewDelegate {
 
+    public func tableViewSelectionDidChange(_ notification: Notification) {
+        if !isNavigating {
+            navigationAnchor = nil
+            navigationCursor = nil
+        }
+        onSelectionChanged?(tableView.selectedRowIndexes.count)
+    }
+
     public func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let cell = (tableView.makeView(withIdentifier: Self.cellIdentifier, owner: self) as? RowContentView)
             ?? {
@@ -587,5 +721,51 @@ extension GridTableView: NSTextFieldDelegate {
     /// was already closed by Enter/Esc (those clear `editingField` first).
     public func controlTextDidEndEditing(_ obj: Notification) {
         endInlineEdit(commit: true)
+    }
+}
+
+// MARK: - Menu validation
+
+extension GridTableView: NSMenuItemValidation {
+    public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        switch menuItem.action {
+        case #selector(copy(_:)), #selector(copyWithHeaders(_:)):
+            return !tableView.selectedRowIndexes.isEmpty
+        default:
+            return true
+        }
+    }
+}
+
+// MARK: - Table subclass (keyboard)
+
+/// The grid's `NSTableView`: adds the keyboard moves AppKit's table lacks —
+/// Home/End and ⌘↑/⌘↓ (first/last row), Page Up/Down (by a screenful),
+/// ⇧ with any of those to extend, ←/→ to scroll a column, Esc to deselect.
+/// ↑/↓, ⇧↑/⇧↓ and ⌘A are native.
+final class GridNSTableView: NSTableView {
+    weak var owner: GridTableView?
+
+    override func keyDown(with event: NSEvent) {
+        guard let owner else { return super.keyDown(with: event) }
+        let flags = event.modifierFlags.intersection([.shift, .command, .option, .control])
+        let extending = flags.contains(.shift)
+        let command = flags.contains(.command)
+        switch event.specialKey {
+        case .home?: owner.navigate(.home, extending: extending)
+        case .end?: owner.navigate(.end, extending: extending)
+        case .pageUp?: owner.navigate(.pageUp, extending: extending)
+        case .pageDown?: owner.navigate(.pageDown, extending: extending)
+        case .upArrow? where command: owner.navigate(.home, extending: extending)
+        case .downArrow? where command: owner.navigate(.end, extending: extending)
+        case .leftArrow? where flags.isEmpty: owner.scrollHorizontally(by: -1)
+        case .rightArrow? where flags.isEmpty: owner.scrollHorizontally(by: 1)
+        default:
+            if event.keyCode == 53, flags.isEmpty { // Esc
+                deselectAll(nil)
+            } else {
+                super.keyDown(with: event)
+            }
+        }
     }
 }

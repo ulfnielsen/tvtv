@@ -28,4 +28,16 @@ final class GrayRowView: NSTableRowView {
         color.setFill()
         dirtyRect.fill()
     }
+
+    /// Selection tint. A translucent wash of the accent color (rather than
+    /// AppKit's solid fill) keeps `RowContentView`'s single `labelColor` text
+    /// readable in light and dark mode; it dims to the unemphasized color
+    /// when the grid isn't the key/first responder, like Finder lists.
+    override func drawSelection(in dirtyRect: NSRect) {
+        let color = isEmphasized
+            ? NSColor.selectedContentBackgroundColor.withAlphaComponent(0.35)
+            : NSColor.unemphasizedSelectedContentBackgroundColor
+        color.setFill()
+        bounds.fill()
+    }
 }

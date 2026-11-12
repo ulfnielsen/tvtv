@@ -386,6 +386,9 @@ struct ContentView: View {
                                 .frame(height: 200)
                         }
                     }
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        statusBar
+                    }
             } else {
                 emptyState
             }
@@ -525,6 +528,40 @@ struct ContentView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    // MARK: Status bar
+    //
+    // Row count (with the unfiltered total while a quick filter is active)
+    // and the selection count. Uses `.safeAreaInset` for the same reason as
+    // the SQL panel: the grid's AppKit view composites over plain siblings.
+    private var statusBar: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 0) {
+                Text(rowCountLabel)
+                if model.coordinator.selectedRowCount > 0 {
+                    Text("  ·  \(model.coordinator.selectedRowCount.formatted()) selected")
+                }
+                Spacer()
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+        }
+        .background(.bar)
+    }
+
+    private var rowCountLabel: String {
+        let coordinator = model.coordinator
+        let shown = coordinator.totalRowCount
+        let noun = coordinator.isQueryResult ? "result rows" : (shown == 1 ? "row" : "rows")
+        if !coordinator.excludedValues.isEmpty, coordinator.unfilteredRowCount != shown {
+            return "\(shown.formatted()) of \(coordinator.unfilteredRowCount.formatted()) \(noun)"
+        }
+        return "\(shown.formatted()) \(noun)"
     }
 
     private var matchCountLabel: String {
