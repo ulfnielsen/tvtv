@@ -760,6 +760,16 @@ extension GridTableView: NSMenuItemValidation {
 final class GridNSTableView: NSTableView {
     weak var owner: GridTableView?
 
+    /// AppKit autoresizes the table by however much the clip view grows,
+    /// ON TOP of its rows' height. The grid is built at zero size, so the
+    /// first layout alone left one empty screen below the last row, and
+    /// every window resize changed it again. Re-tile afterwards so the
+    /// frame is recomputed from the rows and column.
+    override func resize(withOldSuperviewSize oldSize: NSSize) {
+        super.resize(withOldSuperviewSize: oldSize)
+        tile()
+    }
+
     override func keyDown(with event: NSEvent) {
         guard let owner else { return super.keyDown(with: event) }
         let flags = event.modifierFlags.intersection([.shift, .command, .option, .control])
