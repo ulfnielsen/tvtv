@@ -30,8 +30,8 @@ final class DistinctValuesLoader {
 /// `NSPopover` shown from the header's secondary-click affordance (see
 /// `GridTableHeaderView.onColumnFilterRequested`).
 ///
-/// Deliberately minimal (YAGNI): no search-within-popover, no "select all"/
-/// "select none" shortcuts — a plain checklist plus Cancel/Done.
+/// A checklist with Select All / Select None, plus Cancel/Done. No
+/// search-within-popover.
 struct QuickFilterPopover: View {
     /// The column this popover is filtering (for the title and the callback).
     let columnName: String
@@ -76,12 +76,39 @@ struct QuickFilterPopover: View {
     /// are asserted equal in tests).
     static let nullRowValue = DataGridCoordinator.nullSentinel
 
+    /// Select All: include every listed value and "(null)". An exclusion for a
+    /// value NOT in `values` (the list is capped at 500) is kept — it isn't
+    /// visible here, so the button shouldn't silently undo it.
+    static func selectingAll(values: [String], excluded: Set<String>) -> Set<String> {
+        excluded.subtracting(values).subtracting([nullRowValue])
+    }
+
+    /// Select None: exclude every listed value and "(null)" (keeping any
+    /// existing exclusions).
+    static func selectingNone(values: [String], excluded: Set<String>) -> Set<String> {
+        excluded.union(values).union([nullRowValue])
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(columnName)
                 .font(.headline)
                 .lineLimit(1)
                 .padding(EdgeInsets(top: 10, leading: 12, bottom: 6, trailing: 12))
+
+            HStack(spacing: 12) {
+                Button("Select All") {
+                    excluded = Self.selectingAll(values: loader.values ?? [], excluded: excluded)
+                }
+                Button("Select None") {
+                    excluded = Self.selectingNone(values: loader.values ?? [], excluded: excluded)
+                }
+                Spacer()
+            }
+            .buttonStyle(.link)
+            .controlSize(.small)
+            .disabled(loader.values == nil)
+            .padding(EdgeInsets(top: 0, leading: 12, bottom: 6, trailing: 12))
 
             Divider()
 
