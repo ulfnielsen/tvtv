@@ -192,6 +192,20 @@ public final class GridTableView: NSView {
         if let last = valid.last { tableView.scrollRowToVisible(last) }
     }
 
+    /// Take keyboard focus when this grid joins a window where nothing else
+    /// has it. Every sort/filter/reload/query builds a NEW grid and removes
+    /// the old one; if the old one had focus, AppKit hands it to the window
+    /// itself, so ↑/↓ silently stopped working until the user clicked a row
+    /// again. Never steals focus from a real responder (search field, SQL
+    /// editor), only claims it when the window holds it (or nothing does).
+    public override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard let window else { return }
+        if window.firstResponder == nil || window.firstResponder === window {
+            window.makeFirstResponder(tableView)
+        }
+    }
+
     // MARK: Keyboard navigation
 
     /// Selection moves the table doesn't do natively (it already handles
