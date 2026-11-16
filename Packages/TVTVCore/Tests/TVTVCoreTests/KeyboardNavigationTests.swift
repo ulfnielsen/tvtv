@@ -147,6 +147,7 @@ final class KeyboardNavigationTests: XCTestCase {
     private func down(_ flags: NSEvent.ModifierFlags = []) { key(125, NSDownArrowFunctionKey, flags: flags) }
     private func up(_ flags: NSEvent.ModifierFlags = []) { key(126, NSUpArrowFunctionKey, flags: flags) }
     private func pageDown() { key(121, NSPageDownFunctionKey) }
+    private func pageUp() { key(116, NSPageUpFunctionKey) }
     private func end() { key(119, NSEndFunctionKey) }
     private func home() { key(115, NSHomeFunctionKey) }
 
@@ -156,6 +157,73 @@ final class KeyboardNavigationTests: XCTestCase {
     }
 
     // MARK: Tests
+
+    /// The selected row's position on screen, in rows from the top edge.
+    private func selectedRowOnScreen() -> CGFloat {
+        guard let table, let clip = table.enclosingScrollView?.contentView else { return .nan }
+        return (table.rect(ofRow: table.selectedRow).minY - clip.bounds.minY) / 22
+    }
+
+    func test_pageKeys_scrollByAPage_andKeepSelectedRowInPlace() throws {
+        try host()
+        defer { window.orderOut(nil) }
+        guard let table, let clip = table.enclosingScrollView?.contentView else { return XCTFail("no table") }
+        let pageRows = Int(clip.bounds.height / 22)
+        click(row: 0)
+        for _ in 0..<3 { down() }                     // selection 3 rows below the top edge
+        let onScreen = selectedRowOnScreen()
+        XCTAssertEqual(onScreen, 3, accuracy: 0.01)
+
+        pageDown()
+        XCTAssertEqual(table.selectedRow, 3 + pageRows, state)
+        XCTAssertEqual(clip.bounds.minY / 22, CGFloat(pageRows), accuracy: 0.01, "view scrolled exactly one page")
+        XCTAssertEqual(selectedRowOnScreen(), onScreen, accuracy: 0.01, "selected row kept its place")
+
+        pageDown()
+        XCTAssertEqual(table.selectedRow, 3 + 2 * pageRows, state)
+        XCTAssertEqual(selectedRowOnScreen(), onScreen, accuracy: 0.01)
+
+        pageUp()
+        XCTAssertEqual(table.selectedRow, 3 + pageRows, state)
+        XCTAssertEqual(selectedRowOnScreen(), onScreen, accuracy: 0.01, "Page Up doesn't flip the row to the top edge")
+
+        pageUp()
+        XCTAssertEqual(table.selectedRow, 3, state)
+        XCTAssertEqual(clip.bounds.minY, 0, accuracy: 0.01)
+
+        pageUp()                                       // at the top: view can't move, selection goes to row 0
+        XCTAssertEqual(table.selectedRow, 0, state)
+        XCTAssertEqual(clip.bounds.minY, 0, accuracy: 0.01)
+    }
+
+    func test_pageDownAtEnd_clampsToLastRow_andStaysVisible() throws {
+        try host()
+        defer { window.orderOut(nil) }
+        guard let table, let clip = table.enclosingScrollView?.contentView else { return XCTFail("no table") }
+        click(row: 0)
+        end()
+        settle(0.1)
+        pageUp()
+        let afterUp = table.selectedRow
+        pageDown()
+        XCTAssertEqual(table.selectedRow, 24_999, state)
+        let row = table.rect(ofRow: 24_999)
+        XCTAssertTrue(clip.bounds.contains(NSPoint(x: 1, y: row.midY)), "last row visible after Page Down at the end")
+        XCTAssertLessThan(afterUp, 24_999)
+    }
+
+    func test_pageDown_whenSelectionScrolledOffScreen_bringsItBack() throws {
+        try host()
+        defer { window.orderOut(nil) }
+        guard let table, let clip = table.enclosingScrollView?.contentView else { return XCTFail("no table") }
+        click(row: 2)
+        clip.scroll(to: NSPoint(x: 0, y: 5000 * 22))     // trackpad-scroll far away
+        table.enclosingScrollView?.reflectScrolledClipView(clip)
+        pageDown()
+        let row = table.rect(ofRow: table.selectedRow)
+        XCTAssertTrue(clip.bounds.intersects(row), "selected row \(table.selectedRow) is on screen after Page Down — \(state)")
+    }
+
 
     func test_afterUsingSearchField_clickedGridKeepsFocusWhileArrowing() throws {
         try hostWithSearchField()

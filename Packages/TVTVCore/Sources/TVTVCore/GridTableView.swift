@@ -247,7 +247,34 @@ public final class GridTableView: NSView {
         isNavigating = false
         navigationAnchor = anchor
         navigationCursor = target
-        tableView.scrollRowToVisible(target)
+        switch move {
+        case .pageUp, .pageDown:
+            scrollKeepingOnScreenPosition(from: current, to: target)
+        case .home, .end:
+            tableView.scrollRowToVisible(target)
+        }
+    }
+
+    /// Page Up/Down: scroll the view by the same number of rows the selection
+    /// moved, so the selected row keeps its place on screen (Finder/spreadsheet
+    /// behavior). Plain `scrollRowToVisible` scrolled only the minimum needed,
+    /// so the view moved 1 row on one press and a full page on the next, and
+    /// the selected row flipped between the bottom and top edges. Falls back
+    /// to `scrollRowToVisible` at the ends (where the view can't move a full
+    /// page) and when the old selection wasn't on screen to begin with.
+    private func scrollKeepingOnScreenPosition(from current: Int, to target: Int) {
+        let clip = scrollView.contentView
+        let visible = clip.bounds
+        guard current >= 0, visible.intersects(tableView.rect(ofRow: current)) else {
+            tableView.scrollRowToVisible(target)
+            return
+        }
+        let pitch = Self.rowHeight + Self.intercellSpacingHeight
+        let maxY = max(0, tableView.frame.height - visible.height)
+        let y = min(maxY, max(0, visible.minY + CGFloat(target - current) * pitch))
+        clip.scroll(to: NSPoint(x: visible.minX, y: y))
+        scrollView.reflectScrolledClipView(clip)
+        tableView.scrollRowToVisible(target) // no-op unless clamping left it off screen
     }
 
     /// ←/→: scroll horizontally by one column (there is no cell cursor).
