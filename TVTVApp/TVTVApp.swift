@@ -37,6 +37,9 @@ struct TVTVApp: App {
                 Button("Find") { model.focusSearch() }
                     .keyboardShortcut("f", modifiers: .command)
                     .disabled(!model.hasData)
+                Button("Go to Row…") { model.showGoToRow = true }
+                    .keyboardShortcut("g", modifiers: [.command, .option])
+                    .disabled(model.coordinator.totalRowCount == 0)
             }
             // ⌥⌘C next to Edit ▸ Copy: copy the selected grid rows with a
             // header line of column names. Plain ⌘C is the standard Copy

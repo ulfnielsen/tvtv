@@ -23,6 +23,9 @@ data on demand rather than loading whole files into memory.
   CSV, without entering editing mode. Dataset-JSON files can also be saved
   with their CDISC metadata preserved.
 - **Toolbar** — open, attach another file as a table, reload, Save As.
+- **Row navigation** — the footer shows the selected row or, when none is
+  selected, the first visible row. Press ⌥⌘G to jump to a row. Row numbers
+  start at 1 and follow the current sort and filter order.
 - **Minimap** — scroll-position overview; click or drag it to jump.
 - **Dataset-JSON** — CDISC Dataset-JSON v1.1 (`.json` and the streaming
   `.ndjson`) opens with typed columns; edits save back with all CDISC metadata

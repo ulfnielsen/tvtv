@@ -183,6 +183,14 @@ public final class GridTableView: NSView {
 
     /// The selected display-row indexes.
     public var selectedRowIndexes: IndexSet { tableView.selectedRowIndexes }
+    var selectedRowIndex: Int? {
+        let row = tableView.selectedRow
+        return row >= 0 ? row : nil
+    }
+
+    func focusTable() {
+        window?.makeFirstResponder(tableView)
+    }
 
     /// Replace the selection with `rows` (out-of-range indexes are dropped)
     /// and scroll the last one into view.

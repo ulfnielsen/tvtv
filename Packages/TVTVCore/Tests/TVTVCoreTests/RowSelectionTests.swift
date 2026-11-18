@@ -154,6 +154,34 @@ final class RowSelectionTests: XCTestCase {
 
     // MARK: - Coordinator counts
 
+    func test_goToRow_rejectsNumbersOutsideTheCurrentViewWithoutChangingSelection() throws {
+        let coordinator = DataGridCoordinator(connection: connection)
+        let columns = [ColumnInfo(name: "id", sourceIndex: 0),
+                       ColumnInfo(name: "label", sourceIndex: 1),
+                       ColumnInfo(name: "note", sourceIndex: 2)]
+        coordinator.switchTo(view: "sel_fixture", columns: columns)
+        coordinator.setExcluded(["row_1", "row_2"], forColumn: "label")
+        XCTAssertTrue(coordinator.goToRow(498))
+        XCTAssertEqual(coordinator.currentRowNumber, 498)
+        XCTAssertEqual(coordinator.gridView?.selectedRowIndexes, IndexSet(integer: 497))
+        for number in [0, Int.min, 499, Int.max] {
+            XCTAssertFalse(coordinator.goToRow(number))
+            XCTAssertEqual(coordinator.currentRowNumber, 498)
+        }
+
+        coordinator.setExcluded([], forColumn: "label")
+        XCTAssertEqual(coordinator.currentRowNumber, 1, "the rebuilt grid starts at the top")
+        XCTAssertTrue(coordinator.goToRow(500))
+    }
+
+    func test_emptyViewHasNoRowNumberOrJumpTarget() throws {
+        try connection.execute("CREATE VIEW empty_fixture AS SELECT id FROM sel_fixture WHERE false")
+        let coordinator = DataGridCoordinator(connection: connection)
+        coordinator.switchTo(view: "empty_fixture", columns: [ColumnInfo(name: "id", sourceIndex: 0)])
+        XCTAssertNil(coordinator.currentRowNumber)
+        XCTAssertFalse(coordinator.goToRow(1))
+    }
+
     func test_coordinator_tracksSelection_andUnfilteredCount() throws {
         let coordinator = DataGridCoordinator(connection: connection)
         let columns = [

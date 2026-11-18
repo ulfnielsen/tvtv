@@ -69,6 +69,9 @@ final class AppModel {
     /// `Bool` toggle would need the caller to remember to reset it first).
     var focusSearchToken: Int = 0
 
+    /// Presented by the Edit menu's Go to Row command (⌥⌘G).
+    var showGoToRow = false
+
     /// Extensions the open panel / drop flow accept.
     static let openableExtensions = ["parquet", "csv", "tsv", "duckdb", "db", "json", "ndjson"]
 
@@ -371,8 +374,10 @@ struct ContentView: View {
     /// the two (see that property's doc); the `.onChange` below is the other
     /// half of the bridge.
     @FocusState private var searchFieldFocused: Bool
+    @State private var pendingRowJump: Int?
 
     var body: some View {
+        @Bindable var model = model
         ZStack {
             if model.hasData {
                 // The SQL panel is a `.safeAreaInset` above the grid rather
@@ -401,6 +406,11 @@ struct ContentView: View {
             }
         }
         .navigationTitle(model.currentFileName ?? "TVTV")
+        .sheet(isPresented: $model.showGoToRow, onDismiss: finishRowJump) {
+            GoToRowSheet(rowCount: model.coordinator.totalRowCount) { row in
+                pendingRowJump = row
+            }
+        }
         // ⌘F ("Find", `TVTVApp.swift`'s `.commands`) bumps
         // `model.focusSearchToken`; react by moving focus to the search
         // field, whether or not the SQL editor panel happens to be open —
@@ -532,14 +542,16 @@ struct ContentView: View {
 
     // MARK: Status bar
     //
-    // Row count (with the unfiltered total while a quick filter is active)
-    // and the selection count. Uses `.safeAreaInset` for the same reason as
-    // the SQL panel: the grid's AppKit view composites over plain siblings.
+    // Row count, current display position and selection count. Uses
+    // `.safeAreaInset` because the AppKit grid composites over plain siblings.
     private var statusBar: some View {
         VStack(spacing: 0) {
             Divider()
             HStack(spacing: 0) {
                 Text(rowCountLabel)
+                if let row = model.coordinator.currentRowNumber {
+                    Text("  ·  Row \(row.formatted())")
+                }
                 if model.coordinator.selectedRowCount > 0 {
                     Text("  ·  \(model.coordinator.selectedRowCount.formatted()) selected")
                 }
@@ -552,6 +564,13 @@ struct ContentView: View {
             .padding(.vertical, 4)
         }
         .background(.bar)
+    }
+
+    private func finishRowJump() {
+        guard let row = pendingRowJump else { return }
+        pendingRowJump = nil
+        // Wait for the sheet to release keyboard focus before handing it to the grid.
+        model.coordinator.goToRow(row)
     }
 
     private var rowCountLabel: String {
@@ -607,5 +626,48 @@ struct ContentView: View {
             Task { @MainActor in model.open(url: url) }
         }
         return true
+    }
+}
+
+private struct GoToRowSheet: View {
+    let rowCount: Int
+    let onGo: (Int) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var rowFieldFocused: Bool
+    @State private var input = ""
+
+    private var rowNumber: Int? {
+        guard let number = Int(input.trimmingCharacters(in: .whitespacesAndNewlines)),
+              number > 0, number <= rowCount else { return nil }
+        return number
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Go to Row").font(.headline)
+            Text("Enter a row number from 1 to \(rowCount.formatted()).")
+                .foregroundStyle(.secondary)
+            TextField("Row number", text: $input)
+                .focused($rowFieldFocused)
+                .onSubmit(submit)
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Go", action: submit)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(rowNumber == nil)
+            }
+        }
+        .defaultFocus($rowFieldFocused, true)
+        .padding(20)
+        .frame(width: 320)
+    }
+
+    private func submit() {
+        guard let rowNumber else { return }
+        onGo(rowNumber)
+        dismiss()
     }
 }

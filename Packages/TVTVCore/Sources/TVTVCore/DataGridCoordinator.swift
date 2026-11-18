@@ -223,6 +223,23 @@ public final class DataGridCoordinator {
     /// Number of rows selected in the grid (0 after every rebuild — a new
     /// sort/filter/view means new row indices, so the selection is dropped).
     public private(set) var selectedRowCount: Int = 0
+    private var selectedRowIndex: Int?
+
+    /// The 1-based display position of the selected row, or the first visible
+    /// row when nothing is selected. Empty views have no current row.
+    public var currentRowNumber: Int? {
+        guard totalRowCount > 0 else { return nil }
+        return (selectedRowIndex ?? visibleFirstRow) + 1
+    }
+
+    /// Select and reveal a 1-based row in the current sort/filter order.
+    @discardableResult
+    public func goToRow(_ number: Int) -> Bool {
+        guard number > 0, number <= totalRowCount, let gridView else { return false }
+        gridView.selectRows(IndexSet(integer: number - 1))
+        gridView.focusTable()
+        return true
+    }
 
     // MARK: Generation protocol state
 
@@ -599,6 +616,7 @@ public final class DataGridCoordinator {
         self.rowStore = store
         if spec.whereClause.isEmpty { unfilteredRowCount = store.totalRowCount }
         selectedRowCount = 0
+        selectedRowIndex = nil
 
         // GridTableView holds its RowStore as a `let`, so a new query always
         // means a new grid instance. The header, though, can be reused
@@ -612,8 +630,10 @@ public final class DataGridCoordinator {
         grid.onCommitEdit = { [weak self] row, displayColumn, text in
             self?.commitInlineEdit(row: row, displayColumn: displayColumn, text: text)
         }
-        grid.onSelectionChanged = { [weak self] count in
-            self?.selectedRowCount = count
+        grid.onSelectionChanged = { [weak self, weak grid] count in
+            guard let self, let grid, grid === self.gridView else { return }
+            self.selectedRowCount = count
+            self.selectedRowIndex = grid.selectedRowIndex
         }
         let header = headerView ?? GridTableHeaderView(
             columnLayout: layout,

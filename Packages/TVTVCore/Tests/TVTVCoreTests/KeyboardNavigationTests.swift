@@ -158,6 +158,36 @@ final class KeyboardNavigationTests: XCTestCase {
 
     // MARK: Tests
 
+    func test_goToRow_selectsAndRevealsAnOffscreenRow_thenReturnsKeyboardFocus() throws {
+        try hostWithSearchField()
+        defer { window.orderOut(nil) }
+        let table = try XCTUnwrap(table)
+        XCTAssertTrue(window.firstResponder is NSTextView)
+
+        XCTAssertTrue(coordinator.goToRow(25_000))
+        XCTAssertEqual(table.selectedRowIndexes, IndexSet(integer: 24_999))
+        XCTAssertTrue(table.visibleRect.intersects(table.rect(ofRow: 24_999)))
+        XCTAssertTrue(window.firstResponder === table)
+        XCTAssertEqual(coordinator.currentRowNumber, 25_000)
+
+        up()
+        XCTAssertEqual(coordinator.currentRowNumber, 24_999)
+    }
+
+    func test_currentRowNumber_followsScrollingWithoutASelection() throws {
+        try host()
+        defer { window.orderOut(nil) }
+        let table = try XCTUnwrap(table)
+        let scroll = try XCTUnwrap(table.enclosingScrollView)
+        XCTAssertEqual(coordinator.currentRowNumber, 1)
+
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: 1000).midY))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        spin(until: { self.coordinator.currentRowNumber == 1001 })
+        XCTAssertTrue(table.selectedRowIndexes.isEmpty)
+        XCTAssertEqual(coordinator.currentRowNumber, 1001)
+    }
+
     /// The selected row's position on screen, in rows from the top edge.
     private func selectedRowOnScreen() -> CGFloat {
         guard let table, let clip = table.enclosingScrollView?.contentView else { return .nan }
