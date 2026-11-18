@@ -36,7 +36,7 @@ import AppKit
 /// - Reorder (`moveColumn(from:to:)`) uses DISPLAY indices throughout --
 ///   both the dragged column and the insertion index are display positions,
 ///   matching `ColumnLayout.moveColumn`'s own contract.
-public final class GridTableHeaderView: NSView {
+public final class GridTableHeaderView: NSView, NSViewToolTipOwner {
 
     // MARK: Layout constants
 
@@ -103,10 +103,13 @@ public final class GridTableHeaderView: NSView {
     /// Column geometry. Mutated in place by resize (`setWidth`) and reorder
     /// (`moveColumn`) as the user drags.
     public var columnLayout: ColumnLayout {
-        didSet { needsDisplay = true }
+        didSet {
+            needsDisplay = true
+            updateLabelToolTips(force: true)
+        }
     }
 
-    /// Column display labels, indexed by SOURCE column index (same
+    /// Physical column names, indexed by SOURCE column index (same
     /// convention as `ColumnLayout`'s `widths`/`setWidth`) -- purely for the
     /// minimal label drawing; not used by any hit-test math.
     public var columnNames: [String]
@@ -180,11 +183,49 @@ public final class GridTableHeaderView: NSView {
         didSet { needsDisplay = true }
     }
 
-    public init(columnLayout: ColumnLayout, columnNames: [String] = [], columnTypes: [String] = []) {
+    private let columnLabels: [Int: String]
+    private var labelToolTips: [NSView.ToolTipTag: String] = [:]
+    private var toolTipBounds: NSRect?
+
+    var preferredHeight: CGFloat {
+        columnLabels.isEmpty ? GridContainerView.headerHeight : 38
+    }
+
+    public init(columnLayout: ColumnLayout, columnNames: [String] = [], columnTypes: [String] = [],
+                columnLabels: [Int: String] = [:]) {
         self.columnLayout = columnLayout
         self.columnNames = columnNames
         self.columnTypes = columnTypes
+        self.columnLabels = columnLabels.filter { !$0.value.isEmpty }
         super.init(frame: .zero)
+    }
+
+    func columnLabel(atDisplayIndex index: Int) -> String? {
+        guard (0..<columnLayout.columnCount).contains(index) else { return nil }
+        return columnLabels[columnLayout.sourceIndex(displayIndex: index)]
+    }
+
+    func updateLabelToolTips(force: Bool = false) {
+        guard !columnLabels.isEmpty, force || toolTipBounds != bounds else { return }
+        toolTipBounds = bounds
+        removeAllToolTips()
+        labelToolTips.removeAll(keepingCapacity: true)
+        var x: CGFloat = 0
+        for (index, width) in columnLayout.displayWidths.enumerated() {
+            defer { x += width }
+            if x >= bounds.maxX { break }
+            guard x + width > bounds.minX, let label = columnLabel(atDisplayIndex: index) else { continue }
+            let rect = NSRect(x: x, y: 0, width: width, height: bounds.height).intersection(bounds)
+            if !rect.isEmpty {
+                let tag = addToolTip(rect, owner: self, userData: nil)
+                labelToolTips[tag] = label
+            }
+        }
+    }
+
+    public func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag,
+                     point: NSPoint, userData: UnsafeMutableRawPointer?) -> String {
+        labelToolTips[tag] ?? ""
     }
 
     @available(*, unavailable)
@@ -570,14 +611,22 @@ public final class GridTableHeaderView: NSView {
             // silently drift back out of sync with the glyph zone.
             let textStartX = Self.labelTextX(columnLeft: x)
             let textRect = CGRect(
-                x: textStartX, y: 0,
-                width: max(0, w - Self.leadingGutterWidth - 4), height: bounds.height
+                x: textStartX, y: columnLabels.isEmpty ? 0 : 2,
+                width: max(0, w - Self.leadingGutterWidth - 4),
+                height: columnLabels.isEmpty ? bounds.height : 19
             )
             text.draw(
                 with: textRect,
                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
                 context: nil
             )
+
+            if let label = columnLabel(atDisplayIndex: i) {
+                let subtitleRect = NSRect(x: textStartX, y: 20, width: textRect.width, height: 16)
+                NSAttributedString(string: label, attributes: Self.typeLabelAttributes).draw(
+                    with: subtitleRect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], context: nil
+                )
+            }
 
             // Sort glyph: front-most slot of the leading gutter. Neutral "≡"
             // for every column except the currently-sorted one (per

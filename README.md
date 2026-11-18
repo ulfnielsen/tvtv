@@ -11,6 +11,9 @@ data on demand rather than loading whole files into memory.
   pages rows lazily (10,000-row pages) so memory stays flat with file size.
 - **Sort / filter / search** — click a header to sort, per-column quick-filter
   popovers, and in-grid text search with next/previous (⌘G / ⇧⌘G) and highlight.
+- **Column labels** — shown beneath column names when present in Dataset-JSON
+  or a Parquet file's embedded Arrow schema (as written by Derive). Hover for
+  the full label. Labels don't change the names used in SQL or exports.
 - **SQL editor** — run DuckDB SQL over the open file (⌘-Return), with keyword/
   table/column autocomplete. The current file is queryable as `data` or by its
   file name.

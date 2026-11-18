@@ -209,11 +209,21 @@ fn read_parquet_column_labels(path: &str) -> Result<Vec<(String, String)>, Strin
     use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
     let file = File::open(path).map_err(|e| e.to_string())?;
-    let reader = ParquetRecordBatchReaderBuilder::try_new(file).map_err(|e| e.to_string())?;
-    Ok(reader.schema().fields().iter().filter_map(|field| {
-        let label = field.metadata().get("label").filter(|label| !label.is_empty())?;
-        Some((field.name().clone(), label.clone()))
-    }).collect())
+    // Arrow IPC conversion can panic on unsupported types even after the
+    // metadata passes FlatBuffer validation. Treat it as absent metadata
+    // rather than letting a panic cross the C ABI and terminate the viewer.
+    let reader = std::panic::catch_unwind(|| ParquetRecordBatchReaderBuilder::try_new(file))
+        .map_err(|_| "Unsupported embedded Arrow schema".to_owned())?
+        .map_err(|e| e.to_string())?;
+    Ok(reader
+        .schema()
+        .fields()
+        .iter()
+        .filter_map(|field| {
+            let label = field.metadata().get("label").filter(|label| !label.is_empty())?;
+            Some((field.name().clone(), label.clone()))
+        })
+        .collect())
 }
 
 /// Visit each labeled top-level column. The UTF-8 buffers are borrowed only
@@ -229,9 +239,15 @@ pub unsafe extern "C" fn tvtv_parquet_read_column_labels(
     visit: Option<extern "C" fn(*mut c_void, *const u8, usize, *const u8, usize)>,
 ) -> i32 {
     let Some(visit) = visit else { return 1 };
-    if path.is_null() { return 1; }
-    let Ok(path) = CStr::from_ptr(path).to_str() else { return 1 };
-    let Ok(labels) = read_parquet_column_labels(path) else { return 1 };
+    if path.is_null() {
+        return 1;
+    }
+    let Ok(path) = CStr::from_ptr(path).to_str() else {
+        return 1;
+    };
+    let Ok(labels) = read_parquet_column_labels(path) else {
+        return 1;
+    };
     for (name, label) in labels {
         visit(context, name.as_ptr(), name.len(), label.as_ptr(), label.len());
     }
@@ -478,6 +494,32 @@ mod tests {
             };
             assert_eq!(labels.unwrap(), expected);
         }
+    }
+
+    #[test]
+    fn parquet_column_labels_ignore_unsupported_ipc_types() {
+        use parquet::arrow::arrow_writer::{ArrowWriter, ArrowWriterOptions};
+        use parquet::file::{metadata::KeyValue, properties::WriterProperties};
+
+        // Arrow IPC for an `id` integer field with an unsupported 7-bit width.
+        // This footer is structurally valid but cannot be converted to Arrow types.
+        let metadata = concat!(
+            "/////3gAAAAQAAAAAAAKAAwABgAFAAgACgAAAAABBAAMAAAACAAIAAAABAAIAAAABAAAAAEAAAAU",
+            "AAAAEAAUAAgABgAHAAwAAAAQABAAAAAAAAECEAAAABwAAAAEAAAAAAAAAAIAAABpZAAACAAMAAgABwAIAAAAAAAAAQcAAAA=",
+        );
+        let schema = Arc::new(Schema::new(vec![Field::new("id", DataType::Int64, true)]));
+        let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let path = std::env::temp_dir().join(format!("tvtv_unsupported_labels_{stamp}.parquet"));
+        let properties = WriterProperties::builder().set_key_value_metadata(Some(vec![
+            KeyValue::new("ARROW:schema".into(), Some(metadata.into())),
+        ])).build();
+        let options = ArrowWriterOptions::new().with_skip_arrow_metadata(true).with_properties(properties);
+        ArrowWriter::try_new_with_options(File::create(&path).unwrap(), schema, options)
+            .unwrap().close().unwrap();
+
+        let result = std::panic::catch_unwind(|| read_parquet_column_labels(path.to_str().unwrap()));
+        std::fs::remove_file(&path).unwrap();
+        assert!(result.expect("schema conversion must not panic").is_err());
     }
 
     /// Build a small Arrow RecordBatch with Int64/Utf8/Float64 columns and

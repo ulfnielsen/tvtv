@@ -615,12 +615,14 @@ public final class DataGridCoordinator {
         grid.onSelectionChanged = { [weak self] count in
             self?.selectedRowCount = count
         }
-        let header = headerView
-            ?? GridTableHeaderView(
-                columnLayout: layout,
-                columnNames: currentColumns.map(\.name),
-                columnTypes: currentColumns.map(\.type)
-            )
+        let header = headerView ?? GridTableHeaderView(
+            columnLayout: layout,
+            columnNames: currentColumns.map(\.name),
+            columnTypes: currentColumns.map(\.type),
+            columnLabels: currentColumns.reduce(into: [:]) { labels, column in
+                labels[column.sourceIndex] = column.label
+            }
+        )
         header.columnLayout = layout
         self.gridView = grid
         self.headerView = header

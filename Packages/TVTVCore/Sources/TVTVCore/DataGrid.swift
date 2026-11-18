@@ -64,8 +64,7 @@ public struct DataGrid: NSViewRepresentable {
 /// (fills the rest) and syncs the header's horizontal scroll to the grid.
 public final class GridContainerView: NSView {
 
-    /// Header strip height. Fixed for now (dynamic fit to the header labels
-    /// is a later, cell-rendering-adjacent concern).
+    /// Default height for a header without column-label subtitles.
     public static let headerHeight: CGFloat = 28
 
     private var header: NSView?
@@ -119,21 +118,22 @@ public final class GridContainerView: NSView {
     /// Shift the header's coordinate system so its column drawing tracks the
     /// grid's horizontal scroll offset.
     private func syncHeaderScroll() {
-        guard let header, let gridClip else { return }
+        guard let header else { return }
         var b = header.bounds
-        let offsetX = gridClip.bounds.origin.x
+        let offsetX = gridClip?.bounds.origin.x ?? 0
         if b.origin.x != offsetX {
             b.origin.x = offsetX
             header.bounds = b
             header.needsDisplay = true
         }
+        (header as? GridTableHeaderView)?.updateLabelToolTips()
     }
 
     public override func layout() {
         super.layout()
         let w = bounds.width
         let h = bounds.height
-        let headerH = Self.headerHeight
+        let headerH = (header as? GridTableHeaderView)?.preferredHeight ?? Self.headerHeight
         // Header keeps a viewport-width frame; its content is scrolled by
         // shifting its bounds origin (see syncHeaderScroll), so setting the
         // frame here resets only the size — re-sync afterwards.

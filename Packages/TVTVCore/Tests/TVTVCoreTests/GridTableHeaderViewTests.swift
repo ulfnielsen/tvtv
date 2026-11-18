@@ -34,6 +34,33 @@ import XCTest
 /// resolves without requiring an interactive display session.
 final class GridTableHeaderViewTests: XCTestCase {
 
+    @MainActor
+    func test_columnLabelStaysWithPhysicalColumnAfterReorder() {
+        let layout = ColumnLayout(columnNames: ["AGE", "SEX"])
+        let header = GridTableHeaderView(columnLayout: layout, columnLabels: [0: "Âge à la visite"])
+        XCTAssertEqual(header.columnLabel(atDisplayIndex: 0), "Âge à la visite")
+        XCTAssertNil(header.columnLabel(atDisplayIndex: 1))
+
+        header.columnLayout.moveColumn(from: 0, to: 2)
+        XCTAssertNil(header.columnLabel(atDisplayIndex: 0))
+        XCTAssertEqual(header.columnLabel(atDisplayIndex: 1), "Âge à la visite")
+    }
+
+    @MainActor
+    func test_replacingLabeledHeaderRestoresOriginalGridOffset() {
+        let container = GridContainerView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
+        let grid = NSView()
+        let layout = ColumnLayout(columnNames: ["AGE"])
+        let labeled = GridTableHeaderView(columnLayout: layout, columnLabels: [0: "Age"])
+        container.install(header: labeled, grid: grid)
+        container.layoutSubtreeIfNeeded()
+        XCTAssertEqual(grid.frame.minY, 38)
+
+        container.install(header: GridTableHeaderView(columnLayout: layout), grid: grid)
+        container.layoutSubtreeIfNeeded()
+        XCTAssertEqual(grid.frame.minY, 28)
+    }
+
     // MARK: - hitTest: resize zone (±5.0pt straddling a column's right edge)
 
     func test_hitTest_atColumnRightEdge_isResize() {
