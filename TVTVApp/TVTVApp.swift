@@ -69,7 +69,9 @@ private struct SaveCommands: Commands {
     @Bindable var model: AppModel
 
     var body: some Commands {
-        CommandGroup(replacing: .saveItem) {
+        // This group also contains the system's Close command. Insert our
+        // save commands without replacing the existing File menu entries.
+        CommandGroup(after: .saveItem) {
             Button("Save") { model.save() }
                 .keyboardShortcut("s", modifiers: .command)
                 .disabled(!model.coordinator.isEditing)
