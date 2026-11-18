@@ -17,11 +17,14 @@ public struct ColumnInfo: Equatable, Sendable {
     public let name: String
     public let sourceIndex: Int
     public let type: String
+    /// Human-readable description, separate from the physical column name.
+    public let label: String?
 
-    public init(name: String, sourceIndex: Int, type: String = "") {
+    public init(name: String, sourceIndex: Int, type: String = "", label: String? = nil) {
         self.name = name
         self.sourceIndex = sourceIndex
         self.type = type
+        self.label = label
     }
 
     /// Maps a duckdb-swift `DatabaseType` to the uppercase SQL-ish name shown

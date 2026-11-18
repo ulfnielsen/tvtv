@@ -129,7 +129,15 @@ enum DataSource {
             throw OpenError.unsupportedExtension(ext)
         }
 
-        let columns = try columnInfos(forView: viewName, connection: connection)
+        var labels: [String: String] = [:]
+        if let datasetJSON {
+            for column in datasetJSON.columns where !column.label.isEmpty {
+                labels[column.name] = column.label
+            }
+        } else if ext == "parquet" {
+            labels = ParquetColumnLabels.read(from: url)
+        }
+        let columns = try columnInfos(forView: viewName, connection: connection, labels: labels)
 
         // Friendly alias view named after the file, so the SQL editor can say
         // `SELECT * FROM clinical_like` as well as `FROM data`. Skip if the
@@ -261,16 +269,19 @@ enum DataSource {
 
     // MARK: - Schema → ColumnInfo
 
-    private static func columnInfos(forView view: String, connection: Connection) throws -> [ColumnInfo] {
+    private static func columnInfos(forView view: String, connection: Connection,
+                                    labels: [String: String]) throws -> [ColumnInfo] {
         let sql = "SELECT * FROM \(quotedIdentifier(view)) LIMIT 0"
         guard let result = try? connection.query(sql) else {
             throw OpenError.underlying("Could not read schema for view \"\(view)\".")
         }
         return (0..<Int(result.columnCount)).map { index in
-            ColumnInfo(
-                name: result.columnName(at: DBInt(index)),
+            let name = result.columnName(at: DBInt(index))
+            return ColumnInfo(
+                name: name,
                 sourceIndex: index,
-                type: ColumnInfo.sqlTypeName(for: result[DBInt(index)].underlyingDatabaseType)
+                type: ColumnInfo.sqlTypeName(for: result[DBInt(index)].underlyingDatabaseType),
+                label: labels[name]
             )
         }
     }

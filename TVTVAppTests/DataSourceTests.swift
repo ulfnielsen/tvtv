@@ -89,6 +89,7 @@ final class DataSourceTests: XCTestCase {
         XCTAssertEqual(opened.viewName, "data")
         XCTAssertEqual(opened.columns.map(\.name), ["id", "v"])
         XCTAssertEqual(opened.columns.map(\.sourceIndex), [0, 1])
+        XCTAssertEqual(opened.columns.map(\.label), [nil, nil])
 
         let rowCount = try queryCount("SELECT count(*) FROM data", connection: connection)
         XCTAssertEqual(rowCount, 50)
@@ -96,6 +97,32 @@ final class DataSourceTests: XCTestCase {
         // Spot-check actual data, not just row count.
         let firstID = try connection.query("SELECT id FROM data ORDER BY id LIMIT 1")
         XCTAssertEqual(firstID[0].cast(to: Int64.self)[0], 0)
+    }
+
+    func testOpenDeriveParquetReadsEmbeddedColumnLabels() throws {
+        // Unmodified example from Derive's docs/authoring/examples directory.
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("data/fixtures/derive-parquet-column-labels.parquet")
+        let database = try Database(store: .inMemory)
+        let connection = try database.connect()
+        let opened = try DataSource.open(url: url, connection: connection)
+
+        XCTAssertEqual(opened.columns.map(\.name), ["USUBJID", "AGE", "SEX", "XAGE"])
+        XCTAssertEqual(opened.columns.map(\.label), ["Unique Subject Identifier", "Age", nil, "Âge à la visite"])
+        XCTAssertEqual(try queryCount("SELECT count(USUBJID) FROM data", connection: connection), 2)
+    }
+
+    func testOpenParquetWithMalformedArrowSchemaFallsBackToNames() throws {
+        let url = tempDirectory.appendingPathComponent("malformed-metadata.parquet")
+        let database = try Database(store: .inMemory)
+        let connection = try database.connect()
+        try connection.execute("""
+            COPY (SELECT 42::BIGINT AS id) TO '\(url.path)' (FORMAT PARQUET, KV_METADATA {'ARROW:schema': 'not base64!'})
+            """)
+        let opened = try DataSource.open(url: url, connection: connection)
+        XCTAssertEqual(opened.columns.map(\.name), ["id"])
+        XCTAssertEqual(opened.columns.map(\.label), [nil])
+        XCTAssertEqual(try queryCount("SELECT id FROM data", connection: connection), 42)
     }
 
     /// Path to the checked-in Vortex fixture (`data/bench/clinical_like.vtx`),

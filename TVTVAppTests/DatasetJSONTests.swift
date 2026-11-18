@@ -166,6 +166,8 @@ final class DatasetJSONTests: XCTestCase {
             let connection = try database.connect()
             let opened = try DataSource.open(url: url, connection: connection)
             XCTAssertEqual(opened.columns.count, 7, "for \(url.lastPathComponent)")
+            XCTAssertEqual(opened.columns.first(where: { $0.name == "USUBJID" })?.label, "Unique Subject Identifier")
+            XCTAssertEqual(opened.columns.first(where: { $0.name == "AGE" })?.label, "Age")
             XCTAssertEqual(
                 opened.columns.map(\.type),
                 ["VARCHAR", "VARCHAR", "BIGINT", "DOUBLE", "VARCHAR", "VARCHAR", "BOOLEAN"],
