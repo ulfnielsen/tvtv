@@ -73,6 +73,9 @@ public final class GridTableView: NSView {
     /// mutations are the caller's responsibility to redraw.
     public var searchTermLower: String = ""
 
+    /// Source index of the only column eligible for a scoped highlight.
+    var searchColumnIndex: Int?
+
     /// The coordinator's current search match — `row` is an ABSOLUTE row
     /// index (`RowStore.row(at:)` space), `col` a SOURCE column index (same
     /// space `RowContentView.values` is indexed in). `nil` when there is no
@@ -685,6 +688,7 @@ public final class GridTableView: NSView {
         cell.columnWidths = columnWidths
         cell.values = rowStore.row(at: row)
         cell.searchTermLower = searchTermLower
+        cell.searchColumnIndex = searchColumnIndex
         if let match = currentMatch, match.row == row {
             cell.isCurrentMatchRow = true
             cell.currentMatchCol = match.col

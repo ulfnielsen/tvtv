@@ -334,6 +334,26 @@ public final class DataGridCoordinator {
 
     // MARK: Search state
 
+    public var searchableColumns: [ColumnInfo] { currentColumns }
+
+    /// Source index of the scoped column; nil searches all columns.
+    public private(set) var searchColumnIndex: Int?
+
+    public func setSearchColumn(_ sourceIndex: Int?) {
+        if let sourceIndex, !currentColumns.contains(where: { $0.sourceIndex == sourceIndex }) { return }
+        guard searchColumnIndex != sourceIndex else { return }
+        searchColumnIndex = sourceIndex
+        recomputeMatches()
+        recomputeColumnNameMatches()
+        revealSearchColumn()
+    }
+
+    private func revealSearchColumn() {
+        guard let searchColumnIndex,
+              let displayIndex = columnLayout?.displayIndex(sourceIndex: searchColumnIndex) else { return }
+        gridView?.scrollToColumn(displayIndex)
+    }
+
     /// Cell search term, set by the toolbar search field. Setting this
     /// recomputes `searchTermLower` and re-scans currently LOADED rows for
     /// matches (`recomputeMatches`) — **never a SQL scan**: matching tests
@@ -461,6 +481,7 @@ public final class DataGridCoordinator {
         // either way — via the `didSet` when a search was active, or
         // because nothing needed clearing when it wasn't.
         searchTerm = ""
+        searchColumnIndex = nil
 
         // A real view switch gets a fresh layout (the new column set may
         // differ entirely) and a fresh header built against it —
@@ -625,6 +646,7 @@ public final class DataGridCoordinator {
         // `headerView` beforehand when a fresh one is actually needed.
         let grid = GridTableView(rowStore: store, columnLayout: layout)
         grid.searchTermLower = searchTermLower
+        grid.searchColumnIndex = searchColumnIndex
         grid.currentMatch = nil
         grid.editingEnabled = isEditing
         grid.onCommitEdit = { [weak self] row, displayColumn, text in
@@ -1062,6 +1084,11 @@ public final class DataGridCoordinator {
     /// cells, matching "empty means no active search" throughout this type).
     func matches(inRow values: [Cell]) -> [Int] {
         guard !searchTermLower.isEmpty else { return [] }
+        if let index = searchColumnIndex {
+            guard values.indices.contains(index), case .text(let string) = values[index],
+                  string.lowercased().contains(searchTermLower) else { return [] }
+            return [index]
+        }
         var result: [Int] = []
         for (index, cell) in values.enumerated() {
             guard case .text(let string) = cell, string.lowercased().contains(searchTermLower) else { continue }
@@ -1083,7 +1110,8 @@ public final class DataGridCoordinator {
     /// If the previously-focused match is still present in the new list, it
     /// stays focused (recomputing after a page load shouldn't yank focus
     /// away from where the user is looking); otherwise focus moves to the
-    /// first match, or `nil` if there are none.
+    /// first match, or `nil` if there are none. The current column scope
+    /// applies to both navigation and the visible cell highlights.
     private func recomputeMatches() {
         let previousMatch = currentMatch
         var newMatchList: [(row: Int, col: Int)] = []
@@ -1110,6 +1138,7 @@ public final class DataGridCoordinator {
         }
 
         gridView?.searchTermLower = searchTermLower
+        gridView?.searchColumnIndex = searchColumnIndex
         gridView?.currentMatch = currentMatch
         gridView?.reloadVisible()
     }
@@ -1148,7 +1177,7 @@ public final class DataGridCoordinator {
     /// whichever happened to be first in `currentColumns`' own (source-index)
     /// order.
     private func recomputeColumnNameMatches() {
-        guard !searchTermLower.isEmpty else {
+        guard searchColumnIndex == nil, !searchTermLower.isEmpty else {
             matchingColumnNameIndices = []
             headerView?.searchedColumns = []
             return
@@ -1169,9 +1198,8 @@ public final class DataGridCoordinator {
 
     /// Moves `currentMatch` forward (`delta == 1`) or backward (`delta ==
     /// -1`) through `matchList`, wrapping around at either end. No-ops when
-    /// there are no matches. Scrolls the new match's row into view (best
-    /// effort — column-level scroll-into-view is not implemented; see the
-    /// report's "scroll-to-match" note).
+    /// there are no matches. Reveals the new match's row and, for a scoped
+    /// search, the selected column.
     private func advanceMatch(by delta: Int) {
         guard !matchList.isEmpty else { return }
         let count = matchList.count
@@ -1187,6 +1215,7 @@ public final class DataGridCoordinator {
 
         gridView?.currentMatch = currentMatch
         gridView?.scrollToRow(currentMatch!.row)
+        revealSearchColumn()
         gridView?.reloadVisible()
     }
 

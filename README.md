@@ -11,6 +11,7 @@ data on demand rather than loading whole files into memory.
   pages rows lazily (10,000-row pages) so memory stays flat with file size.
 - **Sort / filter / search** — click a header to sort, per-column quick-filter
   popovers, and in-grid text search with next/previous (⌘G / ⇧⌘G) and highlight.
+  Use **All Columns** beside Find to search loaded rows in just one column.
 - **Column labels** — shown beneath column names when present in Dataset-JSON
   or a Parquet file's embedded Arrow schema (as written by Derive). Hover for
   the full label. Labels don't change the names used in SQL or exports.

@@ -51,6 +51,56 @@ final class SearchTests: XCTestCase {
         return coordinator
     }
 
+    func test_searchScopeUpdatesCountAndNavigationWithoutFilteringRows() throws {
+        try connection.execute("""
+            CREATE VIEW scoped AS SELECT * FROM (VALUES
+                ('apple', 'apple'), ('apple', 'pear'), ('pear', 'apple')
+            ) t(a, b)
+            """)
+        let coordinator = makeCoordinator(view: "scoped", columns: [
+            ColumnInfo(name: "a", sourceIndex: 0), ColumnInfo(name: "b", sourceIndex: 1),
+        ])
+        coordinator.handleVisibleRows(first: 0, last: 2)
+        spin(until: { coordinator.dataVersion >= 1 })
+        coordinator.searchTerm = "apple"
+        XCTAssertEqual(coordinator.matchCount, 4)
+
+        coordinator.setSearchColumn(1)
+        XCTAssertEqual(coordinator.matchCount, 2)
+        XCTAssertEqual(coordinator.matchingColumnIndices, [1])
+        XCTAssertEqual(coordinator.currentMatch?.row, 0)
+        XCTAssertEqual(coordinator.currentMatch?.col, 1)
+        coordinator.nextMatch()
+        XCTAssertEqual(coordinator.currentMatch?.row, 2)
+        XCTAssertEqual(coordinator.currentMatch?.col, 1)
+        coordinator.previousMatch()
+        XCTAssertEqual(coordinator.currentMatch?.row, 0)
+        XCTAssertEqual(coordinator.totalRowCount, 3)
+
+        coordinator.setSearchColumn(nil)
+        XCTAssertEqual(coordinator.matchCount, 4)
+    }
+
+    func test_searchScopeFollowsSourceColumnAndResetsWhenSwitchingViews() throws {
+        try connection.execute("CREATE VIEW scoped AS SELECT 'one' AS a, 'two' AS b")
+        let columns = [ColumnInfo(name: "a", sourceIndex: 0), ColumnInfo(name: "b", sourceIndex: 1)]
+        let coordinator = makeCoordinator(view: "scoped", columns: columns)
+        coordinator.setSearchColumn(1)
+        let header = try XCTUnwrap(coordinator.headerView)
+        header.columnLayout = ColumnLayout(widths: [100, 100], order: [1, 0])
+        header.onColumnsReordered?([1, 0])
+        coordinator.searchTerm = "a"
+        XCTAssertTrue(coordinator.matchingColumnNameIndices.isEmpty, "scoped search must not jump to a different header")
+        coordinator.searchTerm = "o"
+        XCTAssertEqual(coordinator.matches(inRow: [.text("one"), .text("two")]), [1])
+
+        coordinator.toggleSort(columnSourceIndex: 1)
+        XCTAssertEqual(coordinator.searchColumnIndex, 1)
+        coordinator.switchTo(view: "scoped", columns: columns)
+        XCTAssertNil(coordinator.searchColumnIndex)
+        XCTAssertTrue(coordinator.searchTerm.isEmpty)
+    }
+
     // MARK: - matches(inRow:): pure helper
 
     func test_matchesInRow_caseInsensitiveSubstring() throws {

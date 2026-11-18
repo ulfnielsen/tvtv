@@ -191,6 +191,23 @@ final class RowContentViewRenderTests: XCTestCase {
         XCTAssertLessThan(display2, 0.05, "display column 2 (source col 1) must NOT show the highlight fill")
     }
 
+    func test_scopedHighlightOnlyPaintsMatchingCellsInSelectedSourceColumn() {
+        let layout = ColumnLayout(widths: [100, 100], order: [1, 0])
+        let view = RowContentView(frame: NSRect(x: 0, y: 0, width: 200, height: 20))
+        view.columnLayout = layout
+        view.columnWidths = layout.displayWidths
+        view.columnXPositions = [0, 100]
+        view.values = [.text("apple"), .text("apple")]
+        view.drawnMaxX = 200
+        view.searchTermLower = "apple"
+        view.searchColumnIndex = 1
+
+        let rep = render(view)
+        // Sample blank space away from both text and the grid lines.
+        XCTAssertGreaterThan(maxAlpha(rep, xFrac0: 0.25, xFrac1: 0.45), 0.20)
+        XCTAssertLessThan(maxAlpha(rep, xFrac0: 0.75, xFrac1: 0.95), 0.05)
+    }
+
     func test_rowContentView_placeholderRowDrawsGridButNoCrash() {
         // values == nil (page not loaded): must render (grid lines only) safely.
         let layout = ColumnLayout(widths: Array(repeating: 100, count: 5), order: Array(0..<5))

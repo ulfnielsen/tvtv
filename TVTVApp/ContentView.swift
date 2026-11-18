@@ -493,6 +493,7 @@ struct ContentView: View {
         return HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
+            searchColumnMenu
             TextField("Find in loaded rows…", text: Binding(
                 get: { coordinator.searchTerm },
                 set: { coordinator.searchTerm = $0 }
@@ -538,6 +539,33 @@ struct ContentView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var searchColumnMenu: some View {
+        let coordinator = model.coordinator
+        let columns = coordinator.searchableColumns
+        let selectedName = columns.first { $0.sourceIndex == coordinator.searchColumnIndex }?.name
+        return Menu {
+            Picker("Search column", selection: Binding(
+                get: { coordinator.searchColumnIndex },
+                set: { coordinator.setSearchColumn($0) }
+            )) {
+                Text("All Columns").tag(nil as Int?)
+                ForEach(columns, id: \.sourceIndex) { column in
+                    Text(column.label.map { "\(column.name) — \($0)" } ?? column.name)
+                        .tag(column.sourceIndex as Int?)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Text(selectedName ?? "All Columns")
+                .lineLimit(1)
+                .frame(maxWidth: 100)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Choose which column to search in loaded rows")
+        .accessibilityLabel("Search column: \(selectedName ?? "All Columns")")
     }
 
     // MARK: Status bar

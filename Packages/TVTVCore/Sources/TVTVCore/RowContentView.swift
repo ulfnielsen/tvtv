@@ -61,6 +61,7 @@ final class RowContentView: NSView {
     /// Pushed in by `GridTableView.bind` from `DataGridCoordinator`'s
     /// `searchTermLower`. Empty means no active search — no highlighting.
     var searchTermLower: String = ""
+    var searchColumnIndex: Int?
 
     /// True when this row is the row holding the coordinator's
     /// `currentMatch`. Pushed in by `GridTableView.bind`.
@@ -139,7 +140,7 @@ final class RowContentView: NSView {
                 // Search highlight background — painted UNDER the text, so
                 // backgrounds are filled before the single text-draw call.
                 // Current match wins over "other match in row".
-                if !searchTermLower.isEmpty {
+                if !searchTermLower.isEmpty, searchColumnIndex == nil || searchColumnIndex == sourceIndex {
                     let cellRect = CGRect(x: x, y: 0, width: w, height: h)
                     if isCurrentMatchRow && sourceIndex == currentMatchCol {
                         Self.searchMatchBg.setFill()
