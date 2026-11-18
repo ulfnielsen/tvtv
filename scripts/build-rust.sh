@@ -12,8 +12,7 @@
 #      (this project is arm64-only — see project.yml's ARCHS/VALID_ARCHS —
 #      so a plain host build already targets the right arch; no
 #      cross-compile `--target` flag is used).
-#   2. Verifies all 11 `tvtv_vortex_*` C symbols are exported from the
-#      staticlib (`nm -gU`), failing the build if any are missing.
+#   2. Checks that the Vortex and Parquet C exports are in the staticlib.
 #   3. If `cbindgen` is installed, regenerates
 #      rust/tvtv-vortex/include/tvtv_vortex.h from src/lib.rs and, if a
 #      reference header is present at the path below, prints a diff against
@@ -68,10 +67,16 @@ if [ -n "${DEVELOPER_DIR:-}" ] && [ -x "$DEVELOPER_DIR/usr/bin/nm" ]; then
   NM_BIN="$DEVELOPER_DIR/usr/bin/nm"
 fi
 
-SYMBOL_COUNT=$("$NM_BIN" -gU "$STATICLIB" 2>/dev/null | grep -c tvtv_vortex_ || true)
+SYMBOLS=$("$NM_BIN" -gU "$STATICLIB" 2>/dev/null || true)
+SYMBOL_COUNT=$(grep -c tvtv_vortex_ <<< "$SYMBOLS" || true)
 echo "==> [build-rust.sh] tvtv_vortex_* symbols exported: $SYMBOL_COUNT"
 if [ "$SYMBOL_COUNT" -lt 11 ]; then
   echo "error: expected at least 11 tvtv_vortex_* symbols, found $SYMBOL_COUNT" >&2
+  exit 1
+fi
+
+if ! grep -qE '[[:space:]]_?tvtv_parquet_read_column_labels$' <<< "$SYMBOLS"; then
+  echo "error: missing tvtv_parquet_read_column_labels export" >&2
   exit 1
 fi
 

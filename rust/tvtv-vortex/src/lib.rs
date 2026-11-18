@@ -18,7 +18,8 @@
 
 #![allow(non_camel_case_types)]
 
-use std::ffi::{CStr, CString};
+use std::ffi::{c_void, CStr, CString};
+use std::fs::File;
 use std::ops::Range;
 use std::os::raw::c_char;
 use std::ptr;
@@ -201,6 +202,40 @@ fn to_cstring(s: &str) -> CString {
             CString::new(cleaned).unwrap_or_else(|_| CString::new("").unwrap())
         }
     }
+}
+
+/// Read the embedded Arrow schema from the Parquet footer without reading rows.
+fn read_parquet_column_labels(path: &str) -> Result<Vec<(String, String)>, String> {
+    use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
+
+    let file = File::open(path).map_err(|e| e.to_string())?;
+    let reader = ParquetRecordBatchReaderBuilder::try_new(file).map_err(|e| e.to_string())?;
+    Ok(reader.schema().fields().iter().filter_map(|field| {
+        let label = field.metadata().get("label").filter(|label| !label.is_empty())?;
+        Some((field.name().clone(), label.clone()))
+    }).collect())
+}
+
+/// Visit each labeled top-level column. The UTF-8 buffers are borrowed only
+/// for the duration of the callback. Returns nonzero on an unreadable schema.
+///
+/// # Safety
+/// `path` must be a valid NUL-terminated string, and `visit` must accept
+/// `context` and the borrowed buffers for the duration of this call.
+#[no_mangle]
+pub unsafe extern "C" fn tvtv_parquet_read_column_labels(
+    path: *const c_char,
+    context: *mut c_void,
+    visit: Option<extern "C" fn(*mut c_void, *const u8, usize, *const u8, usize)>,
+) -> i32 {
+    let Some(visit) = visit else { return 1 };
+    if path.is_null() { return 1; }
+    let Ok(path) = CStr::from_ptr(path).to_str() else { return 1 };
+    let Ok(labels) = read_parquet_column_labels(path) else { return 1 };
+    for (name, label) in labels {
+        visit(context, name.as_ptr(), name.len(), label.as_ptr(), label.len());
+    }
+    0
 }
 
 /// Parse `path` as a Vortex file and materialize up to `row_cap` rows.
@@ -414,6 +449,36 @@ mod tests {
     use std::sync::Arc;
     use vortex::array::arrow::FromArrowArray;
     use vortex::file::WriteOptionsSessionExt;
+
+    #[test]
+    fn parquet_column_labels_read_top_level_metadata_on_empty_files() {
+        use parquet::arrow::arrow_writer::{ArrowWriter, ArrowWriterOptions};
+
+        let labeled = |name: &str, key: &str, value: &str| {
+            Field::new(name, DataType::Utf8, true)
+                .with_metadata([(key.to_owned(), value.to_owned())].into())
+        };
+        let schema = Arc::new(Schema::new(vec![
+            labeled("AGE", "label", "Âge à la visite"),
+            labeled("SEX", "Label", "Wrong key"),
+            labeled("XAGE", "label", "Âge à la visite"),
+            labeled("EMPTY", "label", ""),
+            Field::new("NESTED", DataType::Struct(vec![labeled("INNER", "label", "Nested label")].into()), true),
+        ]));
+        let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        for skip in [false, true] {
+            let path = std::env::temp_dir().join(format!("tvtv_labels_{stamp}_{skip}.parquet"));
+            let options = ArrowWriterOptions::new().with_skip_arrow_metadata(skip);
+            ArrowWriter::try_new_with_options(std::fs::File::create(&path).unwrap(), schema.clone(), options)
+                .unwrap().close().unwrap();
+            let labels = read_parquet_column_labels(path.to_str().unwrap());
+            std::fs::remove_file(&path).unwrap();
+            let expected = if skip { vec![] } else {
+                vec![("AGE".into(), "Âge à la visite".into()), ("XAGE".into(), "Âge à la visite".into())]
+            };
+            assert_eq!(labels.unwrap(), expected);
+        }
+    }
 
     /// Build a small Arrow RecordBatch with Int64/Utf8/Float64 columns and
     /// some nulls, write it to a temp `.vtx` via the Vortex writer, then

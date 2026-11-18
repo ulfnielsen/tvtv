@@ -7,6 +7,7 @@
 #ifndef TVTV_VORTEX_H
 #define TVTV_VORTEX_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -46,6 +47,12 @@ const char *tvtv_vortex_preview_cell(const tvtv_vortex_preview_t *handle,
 int32_t tvtv_vortex_to_parquet(const char *src_path,
                                const char *dest_path,
                                char **out_error);
+
+/* Visit top-level Parquet column labels. Name and label are UTF-8 byte
+ * buffers valid only during each synchronous callback. Returns 0 on success. */
+int32_t tvtv_parquet_read_column_labels(
+    const char *path, void *context,
+    void (*visit)(void *, const uint8_t *, size_t, const uint8_t *, size_t));
 
 /* Free a caller-owned string from an `out_error` out-param. */
 void tvtv_vortex_string_free(char *str);
